@@ -1,0 +1,30 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+	<PropertyGroup>
+		<OutputType>WinExe</OutputType>
+		<TargetFramework>net8.0-windows</TargetFramework>
+		<UseWindowsForms>true</UseWindowsForms>
+		<ImplicitUsings>enable</ImplicitUsings>
+		<Nullable>enable</Nullable>
+
+		<PublishSingleFile>true</PublishSingleFile>
+		<SelfContained>true</SelfContained>
+		<RuntimeIdentifier>win-x64</RuntimeIdentifier>
+		<IncludeNativeLibrariesForSelfExtract>true</IncludeNativeLibrariesForSelfExtract>
+	</PropertyGroup>
+
+	<ItemGroup>
+		<PackageReference Include="QRCoder" Version="1.4.3" />
+		<PackageReference Include="System.Management" Version="8.0.0" />
+	</ItemGroup>
+
+	<!-- THIS RUNS COMPILE.BAT AFTER VS BUILDS (BUT AVOIDS THE LOOP) -->
+	<Target Name="AutoRunCompileBat" AfterTargets="Build" Condition="'$(Configuration)' == 'Release' AND '$(SKIP_CSHARP_BUILD)' != 'true'">
+		<Message Importance="high" Text="==================================================" />
+		<Message Importance="high" Text="Build finished. Auto-launching Compile.bat..." />
+		<Message Importance="high" Text="==================================================" />
+
+		<Exec Command="call &quot;$(ProjectDir)Compile.bat&quot;" />
+	</Target>
+
+</Project>

@@ -1,0 +1,18 @@
+{
+  "version": 2,
+  "dgSpecHash": "FM2T6aFiM1g=",
+  "success": true,
+  "projectFilePath": "C:\\Users\\B!LLA\\source\\repos\\RansomKitV2\\RansomKitV2.csproj",
+  "expectedPackageFiles": [
+    "C:\\Users\\B!LLA\\.nuget\\packages\\microsoft.net.illink.tasks\\8.0.32\\microsoft.net.illink.tasks.8.0.32.nupkg.sha512",
+    "C:\\Users\\B!LLA\\.nuget\\packages\\microsoft.win32.systemevents\\6.0.0\\microsoft.win32.systemevents.6.0.0.nupkg.sha512",
+    "C:\\Users\\B!LLA\\.nuget\\packages\\qrcoder\\1.4.3\\qrcoder.1.4.3.nupkg.sha512",
+    "C:\\Users\\B!LLA\\.nuget\\packages\\system.codedom\\8.0.0\\system.codedom.8.0.0.nupkg.sha512",
+    "C:\\Users\\B!LLA\\.nuget\\packages\\system.drawing.common\\6.0.0\\system.drawing.common.6.0.0.nupkg.sha512",
+    "C:\\Users\\B!LLA\\.nuget\\packages\\system.management\\8.0.0\\system.management.8.0.0.nupkg.sha512",
+    "C:\\Users\\B!LLA\\.nuget\\packages\\microsoft.aspnetcore.app.runtime.win-x64\\8.0.32\\microsoft.aspnetcore.app.runtime.win-x64.8.0.32.nupkg.sha512",
+    "C:\\Users\\B!LLA\\.nuget\\packages\\microsoft.windowsdesktop.app.runtime.win-x64\\8.0.32\\microsoft.windowsdesktop.app.runtime.win-x64.8.0.32.nupkg.sha512",
+    "C:\\Users\\B!LLA\\.nuget\\packages\\microsoft.netcore.app.runtime.win-x64\\8.0.32\\microsoft.netcore.app.runtime.win-x64.8.0.32.nupkg.sha512"
+  ],
+  "logs": []
+}
