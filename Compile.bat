@@ -20,7 +20,6 @@ if %ERRORLEVEL% NEQ 0 (
     echo.
     echo [!] BUILD FAILED! Check the errors above.
     pause
-    :: EXIT 0 FORCES VISUAL STUDIO TO IGNORE THE ERROR
     exit /b 0
 )
 
@@ -28,8 +27,7 @@ echo.
 echo ==================================================
 echo BUILD SUCCESSFUL!
 echo ==================================================
-echo Your single EXE is ready.
+echo Your single EXE is ready (images embedded).
 explorer "%~dp0bin\Release\net8.0-windows\win-x64\publish"
 
-:: EXIT 0 FORCES VISUAL STUDIO TO IGNORE THE ERROR
 exit /b 0

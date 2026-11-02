@@ -1,7 +1,9 @@
-using System.Management; // Fixes ManagementEventWatcher
-using QRCoder;           // Fixes QRCoder
 using System;
+using System.Management;    // ManagementEventWatcher, EventArrivedEventArgs, ManagementBaseObject, WqlEventQuery
+using QRCoder;              // QRCodeGenerator, QRCodeData, QRCode, PngByteQRCode
+using System.Drawing;       // Bitmap, Graphics, Image
 using System.Linq;
+using System.Diagnostics;   // Debug.Write, Stopwatch — usually present alongside ManagementEventWatcher
 using System.Threading;
 
 namespace RansomKitV2

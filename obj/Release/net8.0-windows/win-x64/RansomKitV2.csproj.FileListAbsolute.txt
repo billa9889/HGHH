@@ -2,7 +2,6 @@ C:\Users\B!LLA\source\repos\RansomKitV2\bin\Release\net8.0-windows\win-x64\Ranso
 C:\Users\B!LLA\source\repos\RansomKitV2\bin\Release\net8.0-windows\win-x64\RansomKitV2.deps.json
 C:\Users\B!LLA\source\repos\RansomKitV2\bin\Release\net8.0-windows\win-x64\RansomKitV2.runtimeconfig.json
 C:\Users\B!LLA\source\repos\RansomKitV2\bin\Release\net8.0-windows\win-x64\RansomKitV2.dll
-C:\Users\B!LLA\source\repos\RansomKitV2\bin\Release\net8.0-windows\win-x64\RansomKitV2.pdb
 C:\Users\B!LLA\source\repos\RansomKitV2\bin\Release\net8.0-windows\win-x64\QRCoder.dll
 C:\Users\B!LLA\source\repos\RansomKitV2\bin\Release\net8.0-windows\win-x64\System.Management.dll
 C:\Users\B!LLA\source\repos\RansomKitV2\bin\Release\net8.0-windows\win-x64\Microsoft.CSharp.dll
@@ -474,6 +473,5 @@ C:\Users\B!LLA\source\repos\RansomKitV2\obj\Release\net8.0-windows\win-x64\Ranso
 C:\Users\B!LLA\source\repos\RansomKitV2\obj\Release\net8.0-windows\win-x64\RansomKi.434C5F6C.Up2Date
 C:\Users\B!LLA\source\repos\RansomKitV2\obj\Release\net8.0-windows\win-x64\RansomKitV2.dll
 C:\Users\B!LLA\source\repos\RansomKitV2\obj\Release\net8.0-windows\win-x64\refint\RansomKitV2.dll
-C:\Users\B!LLA\source\repos\RansomKitV2\obj\Release\net8.0-windows\win-x64\RansomKitV2.pdb
 C:\Users\B!LLA\source\repos\RansomKitV2\obj\Release\net8.0-windows\win-x64\RansomKitV2.genruntimeconfig.cache
 C:\Users\B!LLA\source\repos\RansomKitV2\obj\Release\net8.0-windows\win-x64\ref\RansomKitV2.dll

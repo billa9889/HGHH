@@ -3,22 +3,6 @@
   "WorkspaceRootPath": "C:\\Users\\B!LLA\\source\\repos\\RansomKitV2\\",
   "Documents": [
     {
-      "AbsoluteMoniker": "D:0:0:{1EEFA1E9-9A84-C8BB-C649-DBDBE3673D52}|RansomKitV2.csproj|c:\\users\\b!lla\\source\\repos\\ransomkitv2\\program.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}",
-      "RelativeMoniker": "D:0:0:{1EEFA1E9-9A84-C8BB-C649-DBDBE3673D52}|RansomKitV2.csproj|solutionrelative:program.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}"
-    },
-    {
-      "AbsoluteMoniker": "D:0:0:{1EEFA1E9-9A84-C8BB-C649-DBDBE3673D52}|RansomKitV2.csproj|c:\\users\\b!lla\\source\\repos\\ransomkitv2\\compile.bat||{3B902123-F8A7-4915-9F01-361F908088D0}",
-      "RelativeMoniker": "D:0:0:{1EEFA1E9-9A84-C8BB-C649-DBDBE3673D52}|RansomKitV2.csproj|solutionrelative:compile.bat||{3B902123-F8A7-4915-9F01-361F908088D0}"
-    },
-    {
-      "AbsoluteMoniker": "D:0:0:{1EEFA1E9-9A84-C8BB-C649-DBDBE3673D52}|RansomKitV2.csproj|c:\\users\\b!lla\\source\\repos\\ransomkitv2\\anticrackengine.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}",
-      "RelativeMoniker": "D:0:0:{1EEFA1E9-9A84-C8BB-C649-DBDBE3673D52}|RansomKitV2.csproj|solutionrelative:anticrackengine.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}"
-    },
-    {
-      "AbsoluteMoniker": "D:0:0:{1EEFA1E9-9A84-C8BB-C649-DBDBE3673D52}|RansomKitV2.csproj|c:\\users\\b!lla\\source\\repos\\ransomkitv2\\antiforensics.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}",
-      "RelativeMoniker": "D:0:0:{1EEFA1E9-9A84-C8BB-C649-DBDBE3673D52}|RansomKitV2.csproj|solutionrelative:antiforensics.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}"
-    },
-    {
       "AbsoluteMoniker": "D:0:0:{1EEFA1E9-9A84-C8BB-C649-DBDBE3673D52}|RansomKitV2.csproj|c:\\users\\b!lla\\source\\repos\\ransomkitv2\\mainform.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}",
       "RelativeMoniker": "D:0:0:{1EEFA1E9-9A84-C8BB-C649-DBDBE3673D52}|RansomKitV2.csproj|solutionrelative:mainform.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}"
     },
@@ -27,12 +11,20 @@
       "RelativeMoniker": "D:0:0:{1EEFA1E9-9A84-C8BB-C649-DBDBE3673D52}|RansomKitV2.csproj|solutionrelative:cryptoengine.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}"
     },
     {
+      "AbsoluteMoniker": "D:0:0:{1EEFA1E9-9A84-C8BB-C649-DBDBE3673D52}|RansomKitV2.csproj|c:\\users\\b!lla\\source\\repos\\ransomkitv2\\compile.bat||{3B902123-F8A7-4915-9F01-361F908088D0}",
+      "RelativeMoniker": "D:0:0:{1EEFA1E9-9A84-C8BB-C649-DBDBE3673D52}|RansomKitV2.csproj|solutionrelative:compile.bat||{3B902123-F8A7-4915-9F01-361F908088D0}"
+    },
+    {
       "AbsoluteMoniker": "D:0:0:{1EEFA1E9-9A84-C8BB-C649-DBDBE3673D52}|RansomKitV2.csproj|c:\\users\\b!lla\\source\\repos\\ransomkitv2\\mainform.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}|Form",
       "RelativeMoniker": "D:0:0:{1EEFA1E9-9A84-C8BB-C649-DBDBE3673D52}|RansomKitV2.csproj|solutionrelative:mainform.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}|Form"
     },
     {
-      "AbsoluteMoniker": "D:0:0:{1EEFA1E9-9A84-C8BB-C649-DBDBE3673D52}|RansomKitV2.csproj|c:\\users\\b!lla\\source\\repos\\ransomkitv2\\persistence.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}",
-      "RelativeMoniker": "D:0:0:{1EEFA1E9-9A84-C8BB-C649-DBDBE3673D52}|RansomKitV2.csproj|solutionrelative:persistence.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}"
+      "AbsoluteMoniker": "D:0:0:{1EEFA1E9-9A84-C8BB-C649-DBDBE3673D52}|RansomKitV2.csproj|c:\\users\\b!lla\\source\\repos\\ransomkitv2\\scannerasset.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}",
+      "RelativeMoniker": "D:0:0:{1EEFA1E9-9A84-C8BB-C649-DBDBE3673D52}|RansomKitV2.csproj|solutionrelative:scannerasset.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}"
+    },
+    {
+      "AbsoluteMoniker": "D:0:0:{1EEFA1E9-9A84-C8BB-C649-DBDBE3673D52}|RansomKitV2.csproj|c:\\users\\b!lla\\source\\repos\\ransomkitv2\\safebase64utility.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}",
+      "RelativeMoniker": "D:0:0:{1EEFA1E9-9A84-C8BB-C649-DBDBE3673D52}|RansomKitV2.csproj|solutionrelative:safebase64utility.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}"
     }
   ],
   "DocumentGroupContainers": [
@@ -46,105 +38,79 @@
           "Children": [
             {
               "$type": "Document",
-              "DocumentIndex": 2,
-              "Title": "AntiCrackEngine.cs",
-              "DocumentMoniker": "C:\\Users\\B!LLA\\source\\repos\\RansomKitV2\\AntiCrackEngine.cs",
-              "RelativeDocumentMoniker": "AntiCrackEngine.cs",
-              "ToolTip": "C:\\Users\\B!LLA\\source\\repos\\RansomKitV2\\AntiCrackEngine.cs",
-              "RelativeToolTip": "AntiCrackEngine.cs",
-              "ViewState": "AgIAAKYBAAAAAAAAAAAAwLYBAAABAAAAAAAAAA==",
-              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000738|",
-              "WhenOpened": "2026-11-01T19:48:35.455Z",
-              "EditorCaption": ""
-            },
-            {
-              "$type": "Document",
-              "DocumentIndex": 3,
-              "Title": "AntiForensics.cs",
-              "DocumentMoniker": "C:\\Users\\B!LLA\\source\\repos\\RansomKitV2\\AntiForensics.cs",
-              "RelativeDocumentMoniker": "AntiForensics.cs",
-              "ToolTip": "C:\\Users\\B!LLA\\source\\repos\\RansomKitV2\\AntiForensics.cs",
-              "RelativeToolTip": "AntiForensics.cs",
-              "ViewState": "AgIAAP0AAAAAAAAAAAAAwA0BAAABAAAAAAAAAA==",
-              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000738|",
-              "WhenOpened": "2026-11-01T19:48:37.329Z",
-              "EditorCaption": ""
-            },
-            {
-              "$type": "Document",
-              "DocumentIndex": 0,
-              "Title": "Program.cs",
-              "DocumentMoniker": "C:\\Users\\B!LLA\\source\\repos\\RansomKitV2\\Program.cs",
-              "RelativeDocumentMoniker": "Program.cs",
-              "ToolTip": "C:\\Users\\B!LLA\\source\\repos\\RansomKitV2\\Program.cs",
-              "RelativeToolTip": "Program.cs",
-              "ViewState": "AgIAACAAAAAAAAAAAAAAwDAAAAABAAAAAAAAAA==",
-              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000738|",
-              "WhenOpened": "2026-11-01T19:43:39.711Z",
-              "EditorCaption": ""
-            },
-            {
-              "$type": "Document",
-              "DocumentIndex": 5,
+              "DocumentIndex": 1,
               "Title": "CryptoEngine.cs",
               "DocumentMoniker": "C:\\Users\\B!LLA\\source\\repos\\RansomKitV2\\CryptoEngine.cs",
               "RelativeDocumentMoniker": "CryptoEngine.cs",
               "ToolTip": "C:\\Users\\B!LLA\\source\\repos\\RansomKitV2\\CryptoEngine.cs",
               "RelativeToolTip": "CryptoEngine.cs",
-              "ViewState": "AgIAAGcAAAAAAAAAAAAAwHcAAAABAAAAAAAAAA==",
+              "ViewState": "AgIAAKwAAAAAAAAAAAAAwLYAAAAiAAAAAAAAAA==",
               "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000738|",
-              "WhenOpened": "2026-11-01T19:35:54.733Z",
+              "WhenOpened": "2026-11-02T09:02:32.154Z",
               "EditorCaption": ""
             },
             {
               "$type": "Document",
-              "DocumentIndex": 4,
-              "Title": "MainForm.cs",
-              "DocumentMoniker": "C:\\Users\\B!LLA\\source\\repos\\RansomKitV2\\MainForm.cs",
-              "RelativeDocumentMoniker": "MainForm.cs",
-              "ToolTip": "C:\\Users\\B!LLA\\source\\repos\\RansomKitV2\\MainForm.cs",
-              "RelativeToolTip": "MainForm.cs",
-              "ViewState": "AgIAALABAAAAAAAAAAAAwMABAAABAAAAAAAAAA==",
-              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000738|",
-              "WhenOpened": "2026-11-01T19:27:06.724Z",
-              "EditorCaption": ""
-            },
-            {
-              "$type": "Document",
-              "DocumentIndex": 1,
+              "DocumentIndex": 2,
               "Title": "Compile.bat",
               "DocumentMoniker": "C:\\Users\\B!LLA\\source\\repos\\RansomKitV2\\Compile.bat",
               "RelativeDocumentMoniker": "Compile.bat",
               "ToolTip": "C:\\Users\\B!LLA\\source\\repos\\RansomKitV2\\Compile.bat",
               "RelativeToolTip": "Compile.bat",
-              "ViewState": "AgIAABEAAAAAAAAAAAAAACIAAAAJAAAAAAAAAA==",
+              "ViewState": "AgIAAA8AAAAAAAAAAAAAABgAAAAAAAAAAAAAAA==",
               "Icon": "00000000-0000-0000-0000-000000000000.000000|iVBORw0KGgoAAAANSUhEUgAAABAAAAAQCAYAAAAf8/9hAAAAAXNSR0IArs4c6QAAAARnQU1BAACxjwv8YQUAAAAJcEhZcwAADsMAAA7DAcdvqGQAAAE6SURBVDhPY6AI/P//H8oiHzBWlpfeBxqlAOWTCBgfMJGi2ds3AIUG660sL/n/69cvDLznyJn/uw6dwioHwyC9QBeggqu3HzDsOHiS4d37Dwxv371nWL/9AMO5yzegspgAwwAWJiaGb9\u002B\u002BM5joaTKYGmgxfPv\u002BjYGFBUMZHGDI/Pn7l\u002BH3718Mf//9ZfgHZP/5/Zvhz5\u002B/UFlMgGHAz58/GRiB9IGjpxj2HTnBwAjknDp7HuiSHxAFaADDACNdDYYwPzcGPh4uhr9Am5\u002B9eMrw6Mljho6\u002BiQw3bt6GqkIAnJ4L9HJh8HS2Yfj44SNDW005w4d37xg4ONigsgiAO3SA4OtXYAACVeQWlTKwsjJjTbl4DVBXVWaoKMpnsLG0YOjtaGNQVMBMc8CkXAxMyoxkJuX/D6CMAQMMDABIjqFEM6osUwAAAABJRU5ErkJggg==",
-              "WhenOpened": "2026-11-01T19:21:15.083Z",
+              "WhenOpened": "2026-11-02T09:00:55.893Z",
               "EditorCaption": ""
             },
             {
               "$type": "Document",
-              "DocumentIndex": 6,
+              "DocumentIndex": 0,
+              "Title": "MainForm.cs",
+              "DocumentMoniker": "C:\\Users\\B!LLA\\source\\repos\\RansomKitV2\\MainForm.cs",
+              "RelativeDocumentMoniker": "MainForm.cs",
+              "ToolTip": "C:\\Users\\B!LLA\\source\\repos\\RansomKitV2\\MainForm.cs",
+              "RelativeToolTip": "MainForm.cs",
+              "ViewState": "AgIAAGACAAAAAAAAAAAIwHACAAABAAAAAAAAAA==",
+              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000738|",
+              "WhenOpened": "2026-11-02T08:59:47.313Z",
+              "EditorCaption": ""
+            },
+            {
+              "$type": "Document",
+              "DocumentIndex": 3,
               "Title": "MainForm.cs [Design]",
               "DocumentMoniker": "C:\\Users\\B!LLA\\source\\repos\\RansomKitV2\\MainForm.cs",
               "RelativeDocumentMoniker": "MainForm.cs",
               "ToolTip": "C:\\Users\\B!LLA\\source\\repos\\RansomKitV2\\MainForm.cs [Design]",
               "RelativeToolTip": "MainForm.cs [Design]",
               "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000738|",
-              "WhenOpened": "2026-11-01T19:27:06.531Z",
+              "WhenOpened": "2026-11-02T08:59:47.164Z",
               "EditorCaption": " [Design]"
             },
             {
               "$type": "Document",
-              "DocumentIndex": 7,
-              "Title": "Persistence.cs",
-              "DocumentMoniker": "C:\\Users\\B!LLA\\source\\repos\\RansomKitV2\\Persistence.cs",
-              "RelativeDocumentMoniker": "Persistence.cs",
-              "ToolTip": "C:\\Users\\B!LLA\\source\\repos\\RansomKitV2\\Persistence.cs",
-              "RelativeToolTip": "Persistence.cs",
-              "ViewState": "AgIAAGUAAAAAAAAAAAAAwHUAAAABAAAAAAAAAA==",
+              "DocumentIndex": 4,
+              "Title": "ScannerAsset.cs",
+              "DocumentMoniker": "C:\\Users\\B!LLA\\source\\repos\\RansomKitV2\\ScannerAsset.cs",
+              "RelativeDocumentMoniker": "ScannerAsset.cs",
+              "ToolTip": "C:\\Users\\B!LLA\\source\\repos\\RansomKitV2\\ScannerAsset.cs",
+              "RelativeToolTip": "ScannerAsset.cs",
+              "ViewState": "AgIAAEQAAAAAAAAAAAAAwFQAAAABAAAAAAAAAA==",
               "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000738|",
-              "WhenOpened": "2026-11-01T19:26:54.254Z",
+              "WhenOpened": "2026-11-02T08:59:37.155Z",
+              "EditorCaption": ""
+            },
+            {
+              "$type": "Document",
+              "DocumentIndex": 5,
+              "Title": "SafeBase64Utility.cs",
+              "DocumentMoniker": "C:\\Users\\B!LLA\\source\\repos\\RansomKitV2\\SafeBase64Utility.cs",
+              "RelativeDocumentMoniker": "SafeBase64Utility.cs",
+              "ToolTip": "C:\\Users\\B!LLA\\source\\repos\\RansomKitV2\\SafeBase64Utility.cs",
+              "RelativeToolTip": "SafeBase64Utility.cs",
+              "ViewState": "AgIAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA==",
+              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000738|",
+              "WhenOpened": "2026-11-02T08:59:35.421Z",
               "EditorCaption": ""
             }
           ]

