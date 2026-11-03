@@ -475,3 +475,6 @@ C:\Users\B!LLA\source\repos\RansomKitV2\obj\Release\net8.0-windows\win-x64\Ranso
 C:\Users\B!LLA\source\repos\RansomKitV2\obj\Release\net8.0-windows\win-x64\refint\RansomKitV2.dll
 C:\Users\B!LLA\source\repos\RansomKitV2\obj\Release\net8.0-windows\win-x64\RansomKitV2.genruntimeconfig.cache
 C:\Users\B!LLA\source\repos\RansomKitV2\obj\Release\net8.0-windows\win-x64\ref\RansomKitV2.dll
+C:\Users\B!LLA\source\repos\RansomKitV2\bin\Release\net8.0-windows\win-x64\OpenCvSharp.dll
+C:\Users\B!LLA\source\repos\RansomKitV2\bin\Release\net8.0-windows\win-x64\OpenCvSharpExtern.dll
+C:\Users\B!LLA\source\repos\RansomKitV2\bin\Release\net8.0-windows\win-x64\opencv_videoio_ffmpeg4130_64.dll

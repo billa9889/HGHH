@@ -9,8 +9,10 @@
     ".NETCoreApp,Version=v8.0/win-x64": {
       "RansomKitV2/1.0.0": {
         "dependencies": {
+          "OpenCvSharp4": "4.13.0.20260627",
+          "OpenCvSharp4.runtime.win": "4.13.0.20260627",
           "QRCoder": "1.4.3",
-          "System.Management": "8.0.0",
+          "System.Management": "10.0.14",
           "runtimepack.Microsoft.NETCore.App.Runtime.win-x64": "8.0.32",
           "runtimepack.Microsoft.WindowsDesktop.App.Runtime.win-x64": "8.0.32"
         },
@@ -768,10 +770,6 @@
             "assemblyVersion": "8.0.0.0",
             "fileVersion": "8.0.3226.50503"
           },
-          "System.CodeDom.dll": {
-            "assemblyVersion": "8.0.0.0",
-            "fileVersion": "8.0.3226.50405"
-          },
           "System.Configuration.ConfigurationManager.dll": {
             "assemblyVersion": "8.0.0.0",
             "fileVersion": "8.0.3226.50405"
@@ -919,6 +917,24 @@
           }
         }
       },
+      "OpenCvSharp4/4.13.0.20260627": {
+        "runtime": {
+          "lib/net8.0/OpenCvSharp.dll": {
+            "assemblyVersion": "4.0.0.0",
+            "fileVersion": "4.0.0.0"
+          }
+        }
+      },
+      "OpenCvSharp4.runtime.win/4.13.0.20260627": {
+        "native": {
+          "runtimes/win-x64/native/OpenCvSharpExtern.dll": {
+            "fileVersion": "0.0.0.0"
+          },
+          "runtimes/win-x64/native/opencv_videoio_ffmpeg4130_64.dll": {
+            "fileVersion": "2025.12.0.0"
+          }
+        }
+      },
       "QRCoder/1.4.3": {
         "runtime": {
           "lib/net6.0-windows7.0/QRCoder.dll": {
@@ -927,11 +943,22 @@
           }
         }
       },
-      "System.Management/8.0.0": {
+      "System.CodeDom/10.0.14": {
+        "runtime": {
+          "lib/net8.0/System.CodeDom.dll": {
+            "assemblyVersion": "10.0.0.0",
+            "fileVersion": "10.0.1426.52326"
+          }
+        }
+      },
+      "System.Management/10.0.14": {
+        "dependencies": {
+          "System.CodeDom": "10.0.14"
+        },
         "runtime": {
           "runtimes/win/lib/net8.0/System.Management.dll": {
-            "assemblyVersion": "8.0.0.0",
-            "fileVersion": "8.0.23.53103"
+            "assemblyVersion": "10.0.0.14",
+            "fileVersion": "10.0.1426.52326"
           }
         }
       }
@@ -953,6 +980,20 @@
       "serviceable": false,
       "sha512": ""
     },
+    "OpenCvSharp4/4.13.0.20260627": {
+      "type": "package",
+      "serviceable": true,
+      "sha512": "sha512-nYk95jkyYY9f0sF5KqZ3OB1SWkmqsfV7eN0ROiQds/rxpSn0v1G0QIedMbwuqbdPhvQnOIG2DDmpkLnHEJMh8Q==",
+      "path": "opencvsharp4/4.13.0.20260627",
+      "hashPath": "opencvsharp4.4.13.0.20260627.nupkg.sha512"
+    },
+    "OpenCvSharp4.runtime.win/4.13.0.20260627": {
+      "type": "package",
+      "serviceable": true,
+      "sha512": "sha512-POIxR+CTpwHJIdam6wd8U2fprWv5QnIUw50jw79WEGb37He3T1h11SdtwSj9p2PLSfrzonMjO2t71wqi5uFsoQ==",
+      "path": "opencvsharp4.runtime.win/4.13.0.20260627",
+      "hashPath": "opencvsharp4.runtime.win.4.13.0.20260627.nupkg.sha512"
+    },
     "QRCoder/1.4.3": {
       "type": "package",
       "serviceable": true,
@@ -960,12 +1001,19 @@
       "path": "qrcoder/1.4.3",
       "hashPath": "qrcoder.1.4.3.nupkg.sha512"
     },
-    "System.Management/8.0.0": {
+    "System.CodeDom/10.0.14": {
       "type": "package",
       "serviceable": true,
-      "sha512": "sha512-jrK22i5LRzxZCfGb+tGmke2VH7oE0DvcDlJ1HAKYU8cPmD8XnpUT0bYn2Gy98GEhGjtfbR/sxKTVb+dE770pfA==",
-      "path": "system.management/8.0.0",
-      "hashPath": "system.management.8.0.0.nupkg.sha512"
+      "sha512": "sha512-oJYTzyBcc2g06mU699LaJfm964mdlFg6l7BPeqdu8bmK6Fdy9fL9BWugGsZAqWtjnNWp4tanZZ9DlZwHJmmhgg==",
+      "path": "system.codedom/10.0.14",
+      "hashPath": "system.codedom.10.0.14.nupkg.sha512"
+    },
+    "System.Management/10.0.14": {
+      "type": "package",
+      "serviceable": true,
+      "sha512": "sha512-ywAltakc72Oe7liNatclpyq8oiLYx0VMSjQvphlsbPbiQ9glrV3JKvn5M2xFbsOzzh8sV3QAiUdmu2AV/ffN7Q==",
+      "path": "system.management/10.0.14",
+      "hashPath": "system.management.10.0.14.nupkg.sha512"
     }
   },
   "runtimes": {

