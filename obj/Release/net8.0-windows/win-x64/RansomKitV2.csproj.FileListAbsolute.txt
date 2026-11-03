@@ -2,8 +2,17 @@ C:\Users\B!LLA\source\repos\RansomKitV2\bin\Release\net8.0-windows\win-x64\Ranso
 C:\Users\B!LLA\source\repos\RansomKitV2\bin\Release\net8.0-windows\win-x64\RansomKitV2.deps.json
 C:\Users\B!LLA\source\repos\RansomKitV2\bin\Release\net8.0-windows\win-x64\RansomKitV2.runtimeconfig.json
 C:\Users\B!LLA\source\repos\RansomKitV2\bin\Release\net8.0-windows\win-x64\RansomKitV2.dll
+C:\Users\B!LLA\source\repos\RansomKitV2\bin\Release\net8.0-windows\win-x64\Microsoft.Data.Sqlite.dll
+C:\Users\B!LLA\source\repos\RansomKitV2\bin\Release\net8.0-windows\win-x64\OpenCvSharp.dll
 C:\Users\B!LLA\source\repos\RansomKitV2\bin\Release\net8.0-windows\win-x64\QRCoder.dll
+C:\Users\B!LLA\source\repos\RansomKitV2\bin\Release\net8.0-windows\win-x64\SQLitePCLRaw.batteries_v2.dll
+C:\Users\B!LLA\source\repos\RansomKitV2\bin\Release\net8.0-windows\win-x64\SQLitePCLRaw.core.dll
+C:\Users\B!LLA\source\repos\RansomKitV2\bin\Release\net8.0-windows\win-x64\SQLitePCLRaw.provider.e_sqlite3.dll
+C:\Users\B!LLA\source\repos\RansomKitV2\bin\Release\net8.0-windows\win-x64\System.CodeDom.dll
 C:\Users\B!LLA\source\repos\RansomKitV2\bin\Release\net8.0-windows\win-x64\System.Management.dll
+C:\Users\B!LLA\source\repos\RansomKitV2\bin\Release\net8.0-windows\win-x64\OpenCvSharpExtern.dll
+C:\Users\B!LLA\source\repos\RansomKitV2\bin\Release\net8.0-windows\win-x64\opencv_videoio_ffmpeg4130_64.dll
+C:\Users\B!LLA\source\repos\RansomKitV2\bin\Release\net8.0-windows\win-x64\e_sqlite3.dll
 C:\Users\B!LLA\source\repos\RansomKitV2\bin\Release\net8.0-windows\win-x64\Microsoft.CSharp.dll
 C:\Users\B!LLA\source\repos\RansomKitV2\bin\Release\net8.0-windows\win-x64\Microsoft.VisualBasic.Core.dll
 C:\Users\B!LLA\source\repos\RansomKitV2\bin\Release\net8.0-windows\win-x64\Microsoft.Win32.Primitives.dll
@@ -190,7 +199,6 @@ C:\Users\B!LLA\source\repos\RansomKitV2\bin\Release\net8.0-windows\win-x64\Prese
 C:\Users\B!LLA\source\repos\RansomKitV2\bin\Release\net8.0-windows\win-x64\PresentationFramework.dll
 C:\Users\B!LLA\source\repos\RansomKitV2\bin\Release\net8.0-windows\win-x64\PresentationUI.dll
 C:\Users\B!LLA\source\repos\RansomKitV2\bin\Release\net8.0-windows\win-x64\ReachFramework.dll
-C:\Users\B!LLA\source\repos\RansomKitV2\bin\Release\net8.0-windows\win-x64\System.CodeDom.dll
 C:\Users\B!LLA\source\repos\RansomKitV2\bin\Release\net8.0-windows\win-x64\System.Configuration.ConfigurationManager.dll
 C:\Users\B!LLA\source\repos\RansomKitV2\bin\Release\net8.0-windows\win-x64\System.Design.dll
 C:\Users\B!LLA\source\repos\RansomKitV2\bin\Release\net8.0-windows\win-x64\System.Diagnostics.EventLog.Messages.dll
@@ -475,6 +483,3 @@ C:\Users\B!LLA\source\repos\RansomKitV2\obj\Release\net8.0-windows\win-x64\Ranso
 C:\Users\B!LLA\source\repos\RansomKitV2\obj\Release\net8.0-windows\win-x64\refint\RansomKitV2.dll
 C:\Users\B!LLA\source\repos\RansomKitV2\obj\Release\net8.0-windows\win-x64\RansomKitV2.genruntimeconfig.cache
 C:\Users\B!LLA\source\repos\RansomKitV2\obj\Release\net8.0-windows\win-x64\ref\RansomKitV2.dll
-C:\Users\B!LLA\source\repos\RansomKitV2\bin\Release\net8.0-windows\win-x64\OpenCvSharp.dll
-C:\Users\B!LLA\source\repos\RansomKitV2\bin\Release\net8.0-windows\win-x64\OpenCvSharpExtern.dll
-C:\Users\B!LLA\source\repos\RansomKitV2\bin\Release\net8.0-windows\win-x64\opencv_videoio_ffmpeg4130_64.dll

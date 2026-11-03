@@ -14,7 +14,7 @@ using System.Reflection;
 [assembly: System.Reflection.AssemblyCompanyAttribute("RansomKitV2")]
 [assembly: System.Reflection.AssemblyConfigurationAttribute("Release")]
 [assembly: System.Reflection.AssemblyFileVersionAttribute("1.0.0.0")]
-[assembly: System.Reflection.AssemblyInformationalVersionAttribute("1.0.0")]
+[assembly: System.Reflection.AssemblyInformationalVersionAttribute("1.0.0+821c6effe107f673e4b4c7db8259c5cf4f9f560f")]
 [assembly: System.Reflection.AssemblyProductAttribute("RansomKitV2")]
 [assembly: System.Reflection.AssemblyTitleAttribute("RansomKitV2")]
 [assembly: System.Reflection.AssemblyVersionAttribute("1.0.0.0")]
